@@ -3,31 +3,74 @@ import SwiftData
 
 @main
 struct InterviewReadyApp: App {
-    // 1. Set up the SwiftData container for your models
-    let container: ModelContainer
-    
-    init() {
-        do {
-            // Add Question.self and Story.self here once created
-            let schema = Schema([Job.self])
-            let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-            container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }
-    
+    // Onboarding State
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+
+    // Container is created after first frame to avoid long blank launch
+    @State private var container: ModelContainer?
+    @State private var containerLoadError: String?
+
+    // Fade transition into the real app
+    @State private var isAppReady = false
+
     var body: some Scene {
         WindowGroup {
-            // This will be your RootContentView later, containing the TabBar
-            Text("Temporary Root View - Build Tabs Here")
-                .appBackground() // Applies your cream background
-                .onAppear {
-                    // 2. Run the seeder on launch
-                    DataSeeder.shared.seedDataIfNeeded(modelContext: container.mainContext)
+            ZStack {
+                if let container {
+                    // THE REAL APP
+                    Group {
+                        if hasSeenOnboarding {
+                            RootContentView()
+                        } else {
+                            OnboardingView(isOnboardingComplete: $hasSeenOnboarding)
+                        }
+                    }
+                    .transition(.opacity)
+                    .modelContainer(container)
+
+                } else if let containerLoadError {
+                    // If something goes wrong, show a simple error instead of a blank screen
+                    VStack(spacing: 12) {
+                        Text("Couldn’t start InterviewReady")
+                            .font(.headline)
+                        Text(containerLoadError)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                    .padding()
+                } else {
+                    // SHOW YOUR EXISTING SPLASH IMMEDIATELY
+                    SplashScreenView()
+                        .transition(.opacity)
                 }
+            }
+            .animation(.easeInOut(duration: 0.5), value: isAppReady)
+            .task {
+                // Runs once on launch
+                await prepareApp()
+            }
         }
-        // 3. Inject the container into the environment
-        .modelContainer(container)
+    }
+
+    @MainActor
+    private func prepareApp() async {
+        do {
+            // Create the SwiftData container AFTER UI is already showing splash
+            let schema = Schema([Job.self, Question.self, Story.self])
+            let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+            let newContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
+
+            // Seed data
+            DataSeeder.shared.seedDataIfNeeded(modelContext: newContainer.mainContext)
+
+            // Switch into the app
+            container = newContainer
+            isAppReady = true
+
+        } catch {
+            containerLoadError = error.localizedDescription
+        }
     }
 }

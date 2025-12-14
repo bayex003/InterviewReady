@@ -1,41 +1,28 @@
 import Foundation
 import SwiftData
 
-enum JobStage: String, CaseIterable, Codable {
+enum JobStage: String, Codable, CaseIterable {
+    case saved = "Saved"
     case applied = "Applied"
-    case screening = "Screening"
-    case interview = "Interview"
+    case interviewing = "Interviewing"
     case offer = "Offer"
     case rejected = "Rejected"
 }
 
 @Model
-final class Job {
-    var id: UUID
+class Job {
     var companyName: String
     var roleTitle: String
-    var stageValue: String // Stored as string, accessed via enum helper
+    var stage: JobStage
     var dateApplied: Date
     var nextInterviewDate: Date?
-    var jobDescriptionLink: String?
     var generalNotes: String
     
-    // Relationships (To be added later when Question/Story models exist)
-    // @Relationship(deleteRule: .nullify) var linkedQuestions: [Question]?
-    // @Relationship(deleteRule: .nullify) var linkedStories: [Story]?
-    
-    init(companyName: String, roleTitle: String, stage: JobStage = .applied) {
-        self.id = UUID()
+    init(companyName: String, roleTitle: String, stage: JobStage = .saved) {
         self.companyName = companyName
         self.roleTitle = roleTitle
-        self.stageValue = stage.rawValue
+        self.stage = stage
         self.dateApplied = Date()
         self.generalNotes = ""
-    }
-    
-    // Helper to get/set enum
-    var stage: JobStage {
-        get { JobStage(rawValue: stageValue) ?? .applied }
-        set { stageValue = newValue.rawValue }
     }
 }

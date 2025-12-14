@@ -8,42 +8,81 @@
 
 /* Begin PBXBuildFile section */
 		F62008132EEC8E1000B94259 /* AppMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62008122EEC8E0B00B94259 /* AppMain.swift */; };
+		F620087B2EECE57E00B94259 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F620087A2EECE57C00B94259 /* OnboardingView.swift */; };
+		F62008952EEDF5FE00B94259 /* AppBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62008942EEDF5F900B94259 /* AppBackgroundView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		F62008042EEC8DC000B94259 /* InterviewReady.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InterviewReady.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F62008122EEC8E0B00B94259 /* AppMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMain.swift; sourceTree = "<group>"; };
+		F62008452EEC97B200B94259 /* RootContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootContentView.swift; sourceTree = "<group>"; };
+		F620086D2EECBB9200B94259 /* InterviewReady-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "InterviewReady-Info.plist"; sourceTree = "<group>"; };
+		F620087A2EECE57C00B94259 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		F62008942EEDF5F900B94259 /* AppBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBackgroundView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		F62008412EEC90DF00B94259 /* Exceptions for "Resources" folder in "InterviewReady" target */ = {
+		F62008472EEC980400B94259 /* Exceptions for "Core" folder in "InterviewReady" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				initial_questions.json,
-				initial_stories.json,
+				ConfettiView.swift,
+				FloatingTabBar.swift,
+				FloatingTabBarHiddenModifier.swift,
+				RootContentView.swift,
+				SettingsView.swift,
+				SplashScreenView.swift,
+			);
+			target = F62008032EEC8DC000B94259 /* InterviewReady */;
+		};
+		F62008492EEC99D200B94259 /* Exceptions for "Home" folder in "InterviewReady" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				HomeView.swift,
+				PracticeSessionView.swift,
+			);
+			target = F62008032EEC8DC000B94259 /* InterviewReady */;
+		};
+		F620084D2EEC9B5C00B94259 /* Exceptions for "Jobs" folder in "InterviewReady" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				AddJobView.swift,
+				EditJobView.swift,
+				JobDetailView.swift,
+				JobsListView.swift,
+			);
+			target = F62008032EEC8DC000B94259 /* InterviewReady */;
+		};
+		F62008552EEC9FFC00B94259 /* Exceptions for "Questions" folder in "InterviewReady" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				QuestionDetailView.swift,
+				QuestionRow.swift,
+				QuestionsListView.swift,
+			);
+			target = F62008032EEC8DC000B94259 /* InterviewReady */;
+		};
+		F620085C2EECA7CA00B94259 /* Exceptions for "Stories" folder in "InterviewReady" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				AddStoryView.swift,
+				StoriesListView.swift,
+				StoryDetailView.swift,
+				StoryRow.swift,
+			);
+			target = F62008032EEC8DC000B94259 /* InterviewReady */;
+		};
+		F62008712EECC47600B94259 /* Exceptions for "Components" folder in "InterviewReady" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				DictationButton.swift,
 			);
 			target = F62008032EEC8DC000B94259 /* InterviewReady */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		F62008422EEC90DF00B94259 /* Exceptions for "Resources" folder in "Compile Sources" phase from "InterviewReady" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = F62008002EEC8DC000B94259 /* Sources */;
-			membershipExceptions = (
-				initial_questions.json,
-				initial_stories.json,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F62008062EEC8DC000B94259 /* Resources */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				F62008412EEC90DF00B94259 /* Exceptions for "Resources" folder in "InterviewReady" target */,
-				F62008422EEC90DF00B94259 /* Exceptions for "Resources" folder in "Compile Sources" phase from "InterviewReady" target */,
-			);
 			path = Resources;
 			sourceTree = "<group>";
 		};
@@ -64,32 +103,55 @@
 		};
 		F62008322EEC8FAF00B94259 /* Core */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F62008472EEC980400B94259 /* Exceptions for "Core" folder in "InterviewReady" target */,
+			);
 			path = Core;
 			sourceTree = "<group>";
 		};
 		F62008352EEC8FCF00B94259 /* Components */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F62008712EECC47600B94259 /* Exceptions for "Components" folder in "InterviewReady" target */,
+			);
 			path = Components;
 			sourceTree = "<group>";
 		};
 		F620083A2EEC900700B94259 /* Home */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F62008492EEC99D200B94259 /* Exceptions for "Home" folder in "InterviewReady" target */,
+			);
 			path = Home;
 			sourceTree = "<group>";
 		};
 		F620083B2EEC901000B94259 /* Jobs */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F620084D2EEC9B5C00B94259 /* Exceptions for "Jobs" folder in "InterviewReady" target */,
+			);
 			path = Jobs;
 			sourceTree = "<group>";
 		};
 		F620083C2EEC901A00B94259 /* Questions */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F62008552EEC9FFC00B94259 /* Exceptions for "Questions" folder in "InterviewReady" target */,
+			);
 			path = Questions;
 			sourceTree = "<group>";
 		};
 		F620083D2EEC902000B94259 /* Stories */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F620085C2EECA7CA00B94259 /* Exceptions for "Stories" folder in "InterviewReady" target */,
+			);
 			path = Stories;
+			sourceTree = "<group>";
+		};
+		F62008722EECDDF100B94259 /* Utils */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Utils;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -108,6 +170,9 @@
 		F62007FB2EEC8DC000B94259 = {
 			isa = PBXGroup;
 			children = (
+				F62008942EEDF5F900B94259 /* AppBackgroundView.swift */,
+				F62008722EECDDF100B94259 /* Utils */,
+				F620086D2EECBB9200B94259 /* InterviewReady-Info.plist */,
 				F62008312EEC8FA800B94259 /* Views */,
 				F62008292EEC8F6F00B94259 /* Services */,
 				F620081F2EEC8F4800B94259 /* Models */,
@@ -129,6 +194,8 @@
 		F62008312EEC8FA800B94259 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				F62008792EECE56500B94259 /* Onboarding */,
+				F62008452EEC97B200B94259 /* RootContentView.swift */,
 				F620083D2EEC902000B94259 /* Stories */,
 				F620083C2EEC901A00B94259 /* Questions */,
 				F620083B2EEC901000B94259 /* Jobs */,
@@ -137,6 +204,14 @@
 				F62008322EEC8FAF00B94259 /* Core */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		F62008792EECE56500B94259 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				F620087A2EECE57C00B94259 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -159,6 +234,7 @@
 				F62008152EEC8F1400B94259 /* DesignSystem */,
 				F620081F2EEC8F4800B94259 /* Models */,
 				F62008292EEC8F6F00B94259 /* Services */,
+				F62008722EECDDF100B94259 /* Utils */,
 			);
 			name = InterviewReady;
 			packageProductDependencies = (
@@ -216,7 +292,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F620087B2EECE57E00B94259 /* OnboardingView.swift in Sources */,
 				F62008132EEC8E1000B94259 /* AppMain.swift in Sources */,
+				F62008952EEDF5FE00B94259 /* AppBackgroundView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -349,11 +427,14 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D34Q7VHZL5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "InterviewReady-Info.plist";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to the microphone to record your practice sessions.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We use speech recognition to transcribe your answers and stories into text.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -380,11 +461,14 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D34Q7VHZL5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "InterviewReady-Info.plist";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We need access to the microphone to record your practice sessions.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We use speech recognition to transcribe your answers and stories into text.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (

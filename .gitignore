@@ -1,10 +1,63 @@
+# =========================
+# macOS
+# =========================
 .DS_Store
-UserInterfaceState.xcuserstate
-*.itc
-xcuserdata/
+
+# =========================
+# Xcode / Swift
+# =========================
+# Build output & caches
 DerivedData/
 build/
-*.hmap
+*.xcarchive
 *.ipa
-*.dSYM.zip
 *.dSYM
+*.dSYM.zip
+
+# User-specific Xcode files
+xcuserdata/
+*.xcuserstate
+
+# Xcode source control / workspace noise
+*.xccheckout
+*.xcscmblueprint
+
+# Logs
+*.log
+
+# =========================
+# Swift Package Manager
+# =========================
+.build/
+.swiftpm/
+Packages/
+
+# Keep SPM pins if present (recommended)
+!Package.resolved
+
+# =========================
+# CocoaPods (if you use it)
+# =========================
+Pods/
+!Podfile
+!Podfile.lock
+
+# =========================
+# Carthage (if you use it)
+# =========================
+Carthage/Build/
+
+# =========================
+# Secrets / credentials
+# =========================
+.env
+*.p12
+*.mobileprovision
+*.cer
+*.key
+
+# =========================
+# Misc
+# =========================
+*.tmp
+``

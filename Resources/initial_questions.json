@@ -1,10 +1,38 @@
 [
-  {
-    "text": "Tell me about yourself.",
-    "category": "Basics"
-  },
-  {
-    "text": "What is your greatest strength?",
-    "category": "Strengths"
-  }
+  { "text": "Walk me through your background and what brought you to this role.", "category": "Basics" },
+  { "text": "Why do you want this job, and why now?", "category": "Basics" },
+  { "text": "What do you know about our company, and what stood out to you?", "category": "Basics" },
+  { "text": "What are your top 2–3 strengths, and how have they helped you deliver results?", "category": "Basics" },
+  { "text": "What’s a skill you’re actively improving right now, and how are you doing it?", "category": "Basics" },
+
+  { "text": "Tell me about a time you had to learn something quickly to get the job done.", "category": "Behavioral" },
+  { "text": "Tell me about a time you made a mistake. What did you do immediately, and what did you change afterwards?", "category": "Behavioral" },
+  { "text": "Tell me about a time you received difficult feedback. How did you respond and what changed?", "category": "Behavioral" },
+  { "text": "Tell me about a time you had to handle conflict with a colleague or stakeholder.", "category": "Behavioral" },
+  { "text": "Tell me about a time you had to persuade someone who disagreed with you.", "category": "Behavioral" },
+
+  { "text": "Tell me about a time you took ownership of a problem that wasn’t ‘yours’ to solve.", "category": "Behavioral" },
+  { "text": "Tell me about a time you improved a process. What was the before/after impact?", "category": "Behavioral" },
+  { "text": "Tell me about a time you worked under pressure with a tight deadline.", "category": "Behavioral" },
+  { "text": "Tell me about a time you managed multiple priorities. How did you decide what mattered most?", "category": "Behavioral" },
+  { "text": "Tell me about a time you dealt with ambiguity. What did you do first?", "category": "Behavioral" },
+
+  { "text": "Tell me about a time you delivered a result you’re proud of. What was your specific contribution?", "category": "Behavioral" },
+  { "text": "Tell me about a time you improved quality or reduced errors. How did you measure success?", "category": "Behavioral" },
+  { "text": "Tell me about a time you had to communicate bad news. How did you handle it?", "category": "Behavioral" },
+  { "text": "Tell me about a time you had to say ‘no’ or push back. What happened?", "category": "Behavioral" },
+  { "text": "Tell me about a time you helped someone else succeed (coaching, support, teamwork).", "category": "Behavioral" },
+
+  { "text": "Describe a time you had to make a decision with incomplete information.", "category": "Behavioral" },
+  { "text": "Describe a time you spotted a risk early. What actions did you take?", "category": "Behavioral" },
+  { "text": "Describe a time you improved customer experience or supported a customer in a difficult situation.", "category": "Behavioral" },
+  { "text": "Describe a time you had to work with someone with a very different working style.", "category": "Behavioral" },
+  { "text": "Describe a time you had to be extremely detail-oriented. What was at stake?", "category": "Behavioral" },
+
+  { "text": "What motivates you at work, and what drains your energy?", "category": "Basics" },
+  { "text": "What does ‘good’ look like for you in the first 30–60–90 days in a new role?", "category": "Basics" },
+  { "text": "Why should we hire you over other candidates?", "category": "Basics" },
+  { "text": "What salary range are you targeting, and what factors matter to you besides salary?", "category": "Basics" },
+  { "text": "Do you have any questions for us? What would you want to know to decide this is the right move?", "category": "Basics" }
 ]
+

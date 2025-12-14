@@ -1,49 +1,63 @@
 import SwiftUI
 
 extension Color {
-    // MARK: - Primary Accents
-    static let sage500 = Color(hex: "3A7D75")
-    static let sage100 = Color(hex: "E0F0EE")
+    // 1. sage500 is REMOVED (It is in your Asset Catalog, so we don't define it here)
     
-    // MARK: - Backgrounds & Surfaces
-    static let cream50 = Color(hex: "F9FAFB") // Main background
-    static let surfaceWhite = Color(hex: "FFFFFF") // Cards
+    // 2. sage100 matches your screenshot error (Missing member)
+    static var sage100: Color {
+        Color(UIColor { trait in
+            return trait.userInterfaceStyle == .dark
+                ? UIColor(red: 0.09, green: 0.19, blue: 0.18, alpha: 1)
+                : UIColor(red: 0.88, green: 0.94, blue: 0.93, alpha: 1)
+        })
+    }
     
-    // MARK: - Text & Ink
-    static let ink900 = Color(hex: "111827") // Primary text
-    static let ink600 = Color(hex: "4B5563") // Secondary text
-    static let ink400 = Color(hex: "9CA3AF") // Placeholders/Tertiary
+    // 3. ink200 matches your screenshot error (Missing member)
+    static var ink200: Color {
+        Color(UIColor { trait in
+            return trait.userInterfaceStyle == .dark ? .darkGray : .systemGray5
+        })
+    }
     
-    // MARK: - Status Pills (Examples)
-    static let statusBlueBg = Color.blue.opacity(0.15)
-    static let statusBlueText = Color.blue.opacity(0.8)
-    static let statusGreenBg = Color.green.opacity(0.15)
-    static let statusGreenText = Color.green.opacity(0.8)
-}
-
-// Helper for hex codes
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (1, 1, 1, 0)
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
+    // MARK: - Backgrounds
+    static var cream50: Color {
+        Color(UIColor { trait in
+            return trait.userInterfaceStyle == .dark ? UIColor(white: 0.0, alpha: 1.0) : UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1)
+        })
+    }
+    
+    static var surfaceWhite: Color {
+        Color(UIColor { trait in
+            return trait.userInterfaceStyle == .dark ? UIColor(white: 0.11, alpha: 1.0) : UIColor(white: 1.0, alpha: 1.0)
+        })
+    }
+    
+    // MARK: - Text
+    static var ink900: Color {
+        Color(UIColor { trait in
+            return trait.userInterfaceStyle == .dark ? .white : UIColor(white: 0.07, alpha: 1.0)
+        })
+    }
+    
+    static var ink600: Color {
+        Color(UIColor { trait in
+            return trait.userInterfaceStyle == .dark ? .lightGray : UIColor(white: 0.29, alpha: 1.0)
+        })
+    }
+    
+    // NEW: Medium neutral between ink600 and ink400
+    static var ink500: Color {
+        Color(UIColor { trait in
+            // Slightly lighter than ink600 in light mode; similar legibility in dark mode
+            return trait.userInterfaceStyle == .dark
+                ? UIColor(white: 0.75, alpha: 1.0)
+                : UIColor(white: 0.40, alpha: 1.0)
+        })
+    }
+    
+    static var ink400: Color {
+        Color(UIColor { trait in
+            return trait.userInterfaceStyle == .dark ? .lightGray : UIColor.systemGray
+        })
     }
 }

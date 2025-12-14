@@ -1,7 +1,26 @@
-//
-//  Untitled.swift
-//  InterviewReady
-//
-//  Created by Bayo Akeweje on 12/12/2025.
-//
+import Foundation
+import SwiftData
 
+@Model
+final class Question {
+    var id: UUID
+    var text: String
+    var category: String
+    var isAnswered: Bool
+    var answerText: String
+    var dateAdded: Date
+    var dateAnswered: Date?    // Added property
+    
+    // Future relationship: Link to specific jobs
+    // @Relationship(inverse: \Job.linkedQuestions) var linkedJobs: [Job]?
+    
+    init(text: String, category: String = "General") {
+        self.id = UUID()
+        self.text = text
+        self.category = category
+        self.isAnswered = false
+        self.answerText = ""
+        self.dateAdded = Date()
+        self.dateAnswered = nil
+    }
+}

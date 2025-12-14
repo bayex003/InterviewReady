@@ -1,1 +1,10 @@
-
+[
+  {
+    "title": "Database Migration Crisis",
+    "category": "Problem Solving",
+    "situation": "Our production database hit 99% capacity during Black Friday.",
+    "task": "I needed to migrate to a larger instance with zero downtime.",
+    "action": "I set up a read-replica, promoted it, and switched traffic.",
+    "result": "Migration succeeded with 0ms downtime and saved the sales event."
+  }
+]

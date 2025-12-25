@@ -5,6 +5,10 @@ import SwiftData
 struct InitialQuestionData: Decodable {
     let text: String
     let category: String
+
+    // NEW (optional)
+    let tip: String?
+    let exampleAnswer: String?
 }
 
 struct InitialStoryData: Decodable {
@@ -56,7 +60,12 @@ final class DataSeeder {
             let items = try JSONDecoder().decode([InitialQuestionData].self, from: data)
 
             for item in items {
-                let q = Question(text: item.text, category: item.category)
+                let q = Question(
+                    text: item.text,
+                    category: item.category,
+                    tip: item.tip?.trimmingCharacters(in: .whitespacesAndNewlines),
+                    exampleAnswer: item.exampleAnswer?.trimmingCharacters(in: .whitespacesAndNewlines)
+                )
                 context.insert(q)
             }
 
@@ -134,3 +143,4 @@ final class DataSeeder {
     }
     #endif
 }
+

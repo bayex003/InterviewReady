@@ -16,7 +16,7 @@ struct OnboardingView: View {
         ),
         OnboardingStep(
             image: "book.closed.fill",
-            title: "Capture Moments",
+            title: "Capture Stories",
             description: "Save STAR stories so you’re always ready with strong examples."
         ),
         OnboardingStep(
@@ -221,7 +221,7 @@ struct NameOnboardingPage: View {
             .padding(.bottom, 10)
 
             VStack(spacing: 12) {
-                Text("Personalize")
+                Text("Personalise")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.ink900)

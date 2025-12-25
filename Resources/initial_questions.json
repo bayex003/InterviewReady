@@ -1,38 +1,187 @@
 [
-  { "text": "Walk me through your background and what brought you to this role.", "category": "Basics" },
-  { "text": "Why do you want this job, and why now?", "category": "Basics" },
-  { "text": "What do you know about our company, and what stood out to you?", "category": "Basics" },
-  { "text": "What are your top 2–3 strengths, and how have they helped you deliver results?", "category": "Basics" },
-  { "text": "What’s a skill you’re actively improving right now, and how are you doing it?", "category": "Basics" },
+  {
+    "text": "Walk me through your background and what brought you to this role.",
+    "category": "Basics",
+    "tip": "Use a 60–90 second story: Present → Past → Future. Highlight 2–3 relevant experiences, then connect them directly to this role.",
+    "exampleAnswer": "I’m currently working in a role focused on delivering reliable outcomes and improving how work gets done day to day. Over the last couple of years, I’ve built strengths in staying organised, working with different stakeholders, and turning ambiguous tasks into clear actions. I’ve enjoyed roles where I can take ownership, improve processes, and communicate clearly under pressure. What brought me to this role is the chance to do more of that at a bigger scale, with stronger ownership and clearer impact. I’m looking for a team where I can contribute quickly, keep learning, and grow into more responsibility."
+  },
+  {
+    "text": "Why do you want this job, and why now?",
+    "category": "Basics",
+    "tip": "Answer in 3 parts: why this company, why this role, why this timing. Use 1–2 specifics from the job description and avoid generic motivation.",
+    "exampleAnswer": "I want this job because it aligns with the kind of work I perform best in: ownership, clear outcomes, and improving quality and consistency. This role stood out because it combines execution with collaboration, and it’s a space where I can use what I’ve built so far while stretching into a bigger scope. The timing is right because I’ve reached the point where I’m consistently delivering in my current environment and I’m ready for a role with more responsibility and growth. I’m specifically looking for a place where good work is visible and I can build deeper expertise."
+  },
+  {
+    "text": "What do you know about our company, and what stood out to you?",
+    "category": "Basics",
+    "tip": "Mention 2–3 specific facts (product, customers, mission, recent news). Then say what genuinely interests you and how you can contribute.",
+    "exampleAnswer": "From what I’ve seen, your company is focused on delivering a clear customer outcome and improving that experience over time, rather than just shipping features. What stood out to me is the emphasis on quality and consistency, and how you talk about measurable impact. I also noticed the role requires strong communication across teams, which is something I’m comfortable with. I’m interested because it feels like a place where people are expected to take ownership and improve systems, and that’s the environment where I do my best work."
+  },
+  {
+    "text": "What are your top 2–3 strengths, and how have they helped you deliver results?",
+    "category": "Basics",
+    "tip": "Choose strengths that match the role. Prove each with one mini-example and an outcome (impact, metric, or clear result).",
+    "exampleAnswer": "My first strength is ownership — if something is unclear or slipping, I take responsibility to move it forward and keep people aligned. Second is structured problem-solving: I break down messy problems into steps and focus on what will create the biggest impact. Third is communication — I’m comfortable giving clear updates, raising risks early, and keeping stakeholders calm under pressure. For example, when a workflow was causing repeated mistakes, I mapped the root causes, proposed a simpler process, and aligned the team on it. The result was fewer errors and faster turnaround because everyone knew what ‘good’ looked like."
+  },
+  {
+    "text": "What’s a skill you’re actively improving right now, and how are you doing it?",
+    "category": "Basics",
+    "tip": "Pick a real skill that’s relevant but not fatal. Show a plan (practice, feedback loop) and evidence of progress.",
+    "exampleAnswer": "A skill I’m actively improving is being more concise and structured when I explain complex work, especially in meetings. I’ve been doing this by using short frameworks—like “context, decision, next steps”—and by writing my key points before I speak. I also ask for feedback from peers on whether my updates are clear and actionable. Over time, I’ve noticed meetings move faster and fewer follow-up questions come back because the message lands the first time."
+  },
 
-  { "text": "Tell me about a time you had to learn something quickly to get the job done.", "category": "Behavioral" },
-  { "text": "Tell me about a time you made a mistake. What did you do immediately, and what did you change afterwards?", "category": "Behavioral" },
-  { "text": "Tell me about a time you received difficult feedback. How did you respond and what changed?", "category": "Behavioral" },
-  { "text": "Tell me about a time you had to handle conflict with a colleague or stakeholder.", "category": "Behavioral" },
-  { "text": "Tell me about a time you had to persuade someone who disagreed with you.", "category": "Behavioral" },
+  {
+    "text": "Tell me about a time you had to learn something quickly to get the job done.",
+    "category": "Behavioural",
+    "tip": "Use STAR. Emphasize how you identified what mattered, found resources fast, validated your learning, and delivered under time pressure.",
+    "exampleAnswer": "Situation: I was asked to complete a piece of work that depended on a tool or process I hadn’t used before, and the deadline was tight. Task: I needed to become effective quickly without slowing the team down. Action: I identified the minimum I needed to learn, found the best docs/examples, and asked an experienced teammate for a quick walkthrough to avoid common mistakes. I tested my understanding with a small trial before applying it to the real task. Result: I delivered on time and documented the steps so the next person could onboard faster."
+  },
+  {
+    "text": "Tell me about a time you made a mistake. What did you do immediately, and what did you change afterwards?",
+    "category": "Behavioural",
+    "tip": "Own it without over-explaining. Focus on immediate containment, transparency, and the system/process change you made to prevent repeats.",
+    "exampleAnswer": "Situation: I made an incorrect assumption that led to a small but noticeable issue in a deliverable. Task: I needed to contain it quickly and make sure it didn’t happen again. Action: I flagged it immediately, explained what happened clearly, and fixed it as a priority. Afterwards, I added a checklist step and a quick validation/peer check so assumptions were tested earlier. Result: The issue was resolved quickly, trust stayed intact, and the process improvement reduced repeat mistakes."
+  },
+  {
+    "text": "Tell me about a time you received difficult feedback. How did you respond and what changed?",
+    "category": "Behavioural",
+    "tip": "Show maturity: listen, clarify, take action. Include what you changed and how you measured improvement.",
+    "exampleAnswer": "Situation: I received feedback that my updates were sometimes too detailed, which made it harder for others to spot decisions and next steps. Task: I needed to improve how I communicated so collaboration was smoother. Action: I asked for examples, clarified what “good” looked like, and started using a tighter structure: headline, key context, decision, next steps. I also sent short written summaries after discussions. Result: Stakeholders found it easier to follow progress, meetings became more efficient, and I got follow-up feedback that my communication had improved."
+  },
+  {
+    "text": "Tell me about a time you had to handle conflict with a colleague or stakeholder.",
+    "category": "Behavioural",
+    "tip": "Keep it professional and non-blaming. Highlight how you aligned on goals, clarified assumptions, and agreed a plan.",
+    "exampleAnswer": "Situation: A colleague and I disagreed on the best approach to solve a problem, and it started to slow progress. Task: I needed to resolve it quickly while protecting the relationship. Action: I suggested we align on the shared goal first, then listed pros/cons and risks for each approach. I asked what constraints mattered most to them and shared mine. We agreed to test the lower-risk option first with clear success criteria. Result: Tension reduced, we made a decision quickly, and delivery got back on track."
+  },
+  {
+    "text": "Tell me about a time you had to persuade someone who disagreed with you.",
+    "category": "Behavioural",
+    "tip": "Show how you understood their concerns first. Use evidence, trade-offs, and a small pilot/compromise if needed, then the outcome.",
+    "exampleAnswer": "Situation: I proposed a change that a stakeholder initially pushed back on because they worried it would slow delivery. Task: I needed alignment without creating friction. Action: I started by understanding their concerns, then shared evidence of the current problem and the cost of not fixing it. I suggested a small pilot with a short timeline and clear success measures. Result: They agreed to trial it, the pilot showed improvement, and we rolled it out more broadly with stakeholder support."
+  },
 
-  { "text": "Tell me about a time you took ownership of a problem that wasn’t ‘yours’ to solve.", "category": "Behavioral" },
-  { "text": "Tell me about a time you improved a process. What was the before/after impact?", "category": "Behavioral" },
-  { "text": "Tell me about a time you worked under pressure with a tight deadline.", "category": "Behavioral" },
-  { "text": "Tell me about a time you managed multiple priorities. How did you decide what mattered most?", "category": "Behavioral" },
-  { "text": "Tell me about a time you dealt with ambiguity. What did you do first?", "category": "Behavioral" },
+  {
+    "text": "Tell me about a time you took ownership of a problem that wasn’t ‘yours’ to solve.",
+    "category": "Behavioural",
+    "tip": "Explain why it mattered, what you did without overstepping, and how you brought the right people in. Highlight initiative and accountability.",
+    "exampleAnswer": "Situation: I noticed a recurring issue that was affecting outcomes, but it didn’t clearly belong to my responsibilities. Task: I wanted to improve it without stepping on toes. Action: I gathered a few examples, documented the impact, and shared it with the right owners along with a suggested fix. I offered to coordinate next steps and keep everyone aligned. Result: The issue was addressed faster because someone drove it, the process improved, and the team avoided repeated rework."
+  },
+  {
+    "text": "Tell me about a time you improved a process. What was the before/after impact?",
+    "category": "Behavioural",
+    "tip": "Quantify the before/after (time saved, fewer defects, faster cycle). Explain the root cause and the change you implemented.",
+    "exampleAnswer": "Situation: A recurring workflow was causing delays and repeat mistakes because steps weren’t consistent. Task: I wanted to simplify it and make it more reliable. Action: I mapped the current steps, identified bottlenecks, and introduced a clearer checklist and a shared template so everyone followed the same flow. I aligned stakeholders on what “done” meant. Result: Turnaround improved, fewer items came back for rework, and outcomes became more predictable."
+  },
+  {
+    "text": "Tell me about a time you worked under pressure with a tight deadline.",
+    "category": "Behavioural",
+    "tip": "Explain how you prioritised, communicated risks early, and protected quality. Mention what you would do differently next time.",
+    "exampleAnswer": "Situation: We had an urgent deadline with multiple moving parts and limited time. Task: I needed to deliver without sacrificing quality. Action: I prioritised high-impact work first, flagged risks early, and kept communication short and frequent. I reduced scope on non-essential items and agreed those trade-offs with stakeholders. Result: We met the deadline, avoided major issues, and stayed aligned because everyone understood the plan."
+  },
+  {
+    "text": "Tell me about a time you managed multiple priorities. How did you decide what mattered most?",
+    "category": "Behavioural",
+    "tip": "Show a decision framework: urgency vs impact, stakeholders, deadlines. Mention how you communicated trade-offs and rechecked priorities.",
+    "exampleAnswer": "Situation: I had several tasks due around the same time with competing urgency. Task: I needed to pick the right order and keep stakeholders informed. Action: I assessed each item by impact and deadline, checked dependencies, and clarified what would cause the most risk if delayed. I communicated my proposed order and updated it as new information came in. Result: The most important work landed on time, stakeholders felt informed, and nothing critical slipped."
+  },
+  {
+    "text": "Tell me about a time you dealt with ambiguity. What did you do first?",
+    "category": "Behavioural",
+    "tip": "Start with clarifying the goal and constraints. Then describe how you gathered info, tested assumptions, and took a first reversible step.",
+    "exampleAnswer": "Situation: I was given a goal but not a clear definition of what success looked like. Task: I needed to move forward without wasting time. Action: First, I clarified the outcome, constraints, and who the decision-makers were. Then I gathered quick input from key people and proposed a simple plan with assumptions stated clearly. I took a small reversible step to test direction before committing fully. Result: Ambiguity reduced quickly, alignment improved, and progress continued without repeated rework."
+  },
 
-  { "text": "Tell me about a time you delivered a result you’re proud of. What was your specific contribution?", "category": "Behavioral" },
-  { "text": "Tell me about a time you improved quality or reduced errors. How did you measure success?", "category": "Behavioral" },
-  { "text": "Tell me about a time you had to communicate bad news. How did you handle it?", "category": "Behavioral" },
-  { "text": "Tell me about a time you had to say ‘no’ or push back. What happened?", "category": "Behavioral" },
-  { "text": "Tell me about a time you helped someone else succeed (coaching, support, teamwork).", "category": "Behavioral" },
+  {
+    "text": "Tell me about a time you delivered a result you’re proud of. What was your specific contribution?",
+    "category": "Behavioural",
+    "tip": "Choose something relevant and measurable. Be explicit about your role versus the team’s role, and highlight the impact.",
+    "exampleAnswer": "Situation: The team had an important outcome to deliver that required coordination and consistent execution. Task: I wanted to make sure my contribution was clear and valuable. Action: I took ownership of a key part of delivery, kept stakeholders aligned with regular updates, and focused on removing blockers quickly. I documented decisions and ensured follow-through on actions. Result: The outcome landed successfully, and my specific contribution was driving clarity and execution so the work didn’t stall or bounce back."
+  },
+  {
+    "text": "Tell me about a time you improved quality or reduced errors. How did you measure success?",
+    "category": "Behavioural",
+    "tip": "Include the metric (defect rate, rework, incidents). Explain the intervention (tests, checks, process), then the measured improvement.",
+    "exampleAnswer": "Situation: We were seeing repeat issues that created rework and reduced confidence. Task: I needed to reduce errors and raise quality. Action: I looked for patterns, introduced a tighter checklist and validation step, and encouraged earlier reviews so problems surfaced sooner. I tracked repeat issues and how often work needed redoing. Result: Repeat problems reduced, turnaround improved, and stakeholders had more confidence because outcomes became more predictable."
+  },
+  {
+    "text": "Tell me about a time you had to communicate bad news. How did you handle it?",
+    "category": "Behavioural",
+    "tip": "Show clarity and empathy: state the issue, impact, options, and next steps. Mention how you followed up and kept stakeholders informed.",
+    "exampleAnswer": "Situation: A risk became real and it was going to impact expectations or timing. Task: I needed to communicate clearly without causing panic. Action: I shared the issue early, explained the impact in plain terms, and offered options with trade-offs. I proposed next steps and owners so it felt controlled, and I kept updates consistent. Result: Stakeholders trusted the process, decisions were made quickly, and we avoided last-minute surprises."
+  },
+  {
+    "text": "Tell me about a time you had to say ‘no’ or push back. What happened?",
+    "category": "Behavioural",
+    "tip": "Frame it as protecting priorities/quality. Offer alternatives, explain trade-offs, and show how you maintained trust.",
+    "exampleAnswer": "Situation: A request came in that would have harmed quality or caused a critical priority to slip. Task: I needed to push back constructively. Action: I explained the impact and trade-offs, offered alternatives, and suggested a better timing or smaller scope that still met the need. I kept it focused on outcomes rather than opinion. Result: We protected the most important priorities, the stakeholder still got value, and the relationship stayed strong."
+  },
+  {
+    "text": "Tell me about a time you helped someone else succeed (coaching, support, teamwork).",
+    "category": "Behavioural",
+    "tip": "Describe how you identified their need, supported them (mentoring, pairing, unblock), and the outcome for them and the team.",
+    "exampleAnswer": "Situation: A teammate was struggling with a task and it was slowing progress. Task: I wanted to help without taking over. Action: I asked what they needed, offered a quick walkthrough, and paired with them on the tricky part so they built confidence. I shared a simple template/checklist they could reuse. Result: They completed the work successfully, became more independent next time, and overall delivery improved because the team was stronger."
+  },
 
-  { "text": "Describe a time you had to make a decision with incomplete information.", "category": "Behavioral" },
-  { "text": "Describe a time you spotted a risk early. What actions did you take?", "category": "Behavioral" },
-  { "text": "Describe a time you improved customer experience or supported a customer in a difficult situation.", "category": "Behavioral" },
-  { "text": "Describe a time you had to work with someone with a very different working style.", "category": "Behavioral" },
-  { "text": "Describe a time you had to be extremely detail-oriented. What was at stake?", "category": "Behavioral" },
+  {
+    "text": "Describe a time you had to make a decision with incomplete information.",
+    "category": "Behavioural",
+    "tip": "Explain the risk, what data you did have, and how you limited downside. Mention how you monitored and adjusted after deciding.",
+    "exampleAnswer": "Situation: I needed to make a decision quickly, but the full data wasn’t available. Task: I wanted to move forward responsibly without creating unnecessary risk. Action: I gathered the best available signals, stated my assumptions, and chose an option that limited downside. I set a checkpoint to review once more information arrived. Result: We kept momentum, avoided major negative impact, and adjusted early when new information confirmed the best path."
+  },
+  {
+    "text": "Describe a time you spotted a risk early. What actions did you take?",
+    "category": "Behavioural",
+    "tip": "Show proactivity: how you identified signals, raised it early, proposed mitigation options, and tracked it to resolution.",
+    "exampleAnswer": "Situation: I noticed early signs that something could go wrong—timeline, quality, or alignment. Task: I needed to prevent it becoming a bigger issue. Action: I documented what I was seeing, raised it early with the right people, proposed mitigations, and tracked it openly until resolved. Result: We avoided a last-minute failure, stakeholders appreciated the early warning, and the team responded proactively rather than reactively."
+  },
+  {
+    "text": "Describe a time you improved customer experience or supported a customer in a difficult situation.",
+    "category": "Behavioural",
+    "tip": "Show empathy + action. Explain the customer’s pain, what you did, how you communicated, and the result (retention, satisfaction, resolution).",
+    "exampleAnswer": "Situation: A customer was frustrated because something wasn’t working as expected. Task: I needed to resolve the issue while restoring confidence. Action: I listened, confirmed impact, gave clear next steps and timeframes, coordinated internally, and kept the customer updated. Result: The issue was resolved, the customer felt supported, and we reduced repeat problems by capturing what caused the experience."
+  },
+  {
+    "text": "Describe a time you had to work with someone with a very different working style.",
+    "category": "Behavioural",
+    "tip": "Avoid judgement. Explain how you adapted (cadence, documentation, clarity) and found a working agreement that improved outcomes.",
+    "exampleAnswer": "Situation: I worked with someone whose approach differed from mine—communication style, pace, or detail level. Task: I needed to collaborate effectively without friction. Action: I suggested we agree a cadence, set clear expectations, and document key decisions so we stayed aligned. I focused on outcomes rather than style. Result: Misunderstandings reduced, collaboration improved, and delivery became smoother because we had a working agreement."
+  },
+  {
+    "text": "Describe a time you had to be extremely detail-oriented. What was at stake?",
+    "category": "Behavioural",
+    "tip": "Pick a high-stakes example (money, safety, customer trust). Show your method: checklists, double-checks, peer review, validation.",
+    "exampleAnswer": "Situation: I worked on something where small mistakes would have had real impact—customer trust or costly rework. Task: I needed to be precise and avoid errors. Action: I used a checklist, validated assumptions, double-checked key details, and got a second set of eyes where appropriate. Result: The work landed cleanly, we avoided issues, and the approach became repeatable for future tasks."
+  },
 
-  { "text": "What motivates you at work, and what drains your energy?", "category": "Basics" },
-  { "text": "What does ‘good’ look like for you in the first 30–60–90 days in a new role?", "category": "Basics" },
-  { "text": "Why should we hire you over other candidates?", "category": "Basics" },
-  { "text": "What salary range are you targeting, and what factors matter to you besides salary?", "category": "Basics" },
-  { "text": "Do you have any questions for us? What would you want to know to decide this is the right move?", "category": "Basics" }
+  {
+    "text": "What motivates you at work, and what drains your energy?",
+    "category": "Basics",
+    "tip": "Be honest but professional. Connect motivation to the role, and frame drains as things you manage with boundaries/process—not complaints.",
+    "exampleAnswer": "I’m motivated by clear goals, ownership, and being able to see the impact of my work. I enjoy solving real problems with a team and improving how things are done. What drains my energy is repeated avoidable rework caused by unclear priorities or lack of alignment. I manage that by clarifying expectations early, documenting decisions, and communicating risks before they become issues."
+  },
+  {
+    "text": "What does ‘good’ look like for you in the first 30–60–90 days in a new role?",
+    "category": "Basics",
+    "tip": "Show a ramp plan: learn the domain, build relationships, deliver quick wins, then take ownership. Keep it role-specific.",
+    "exampleAnswer": "In the first 30 days, good looks like learning the domain, understanding how success is measured, and building strong relationships with the team. By 60 days, I’d aim to own a meaningful piece of work end-to-end and be trusted to deliver with minimal supervision. By 90 days, I’d want to be consistently contributing, improving a process or quality area, and having clear ownership of priorities that matter to the team."
+  },
+  {
+    "text": "Why should we hire you over other candidates?",
+    "category": "Basics",
+    "tip": "Give 3 reasons tied to the job: capability, evidence, and fit. Use proof points and finish with how you’ll deliver in the role.",
+    "exampleAnswer": "You should hire me because I combine strong ownership with structured delivery and clear communication. I’m reliable under pressure and I focus on outcomes, not just activity. I take feedback seriously and improve fast, which helps me ramp quickly. If hired, I’ll focus on becoming productive early, building trust with the team, and delivering measurable improvements over time."
+  },
+  {
+    "text": "What salary range are you targeting, and what factors matter to you besides salary?",
+    "category": "Basics",
+    "tip": "Give a researched range and ask about their band. Mention 2–3 other factors (growth, flexibility, scope) without sounding inflexible.",
+    "exampleAnswer": "Based on what I’ve seen in the market and the responsibilities of this role, I’m targeting a range around £X to £Y depending on the full package. Beyond salary, I care about scope, growth opportunities, flexibility, and the team environment. If you can share the salary band for this position, I can confirm whether we’re aligned."
+  },
+  {
+    "text": "Do you have any questions for us? What would you want to know to decide this is the right move?",
+    "category": "Basics",
+    "tip": "Ask 3–5 thoughtful questions about success metrics, team dynamics, priorities, and growth. Avoid questions answered on the website.",
+    "exampleAnswer": "Yes. I’d like to understand what success looks like in the first 3–6 months and how performance is measured. What are the top priorities for the team right now, and what are the biggest challenges? How would you describe the team’s working style and how decisions are made? What opportunities are there for growth and progression in this role? And finally, what would make someone really successful here compared to someone who struggles?"
+  }
 ]
-

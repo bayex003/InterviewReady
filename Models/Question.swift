@@ -9,12 +9,18 @@ final class Question {
     var isAnswered: Bool
     var answerText: String
     var dateAdded: Date
-    var dateAnswered: Date?    // Added property
-    
-    // Future relationship: Link to specific jobs
-    // @Relationship(inverse: \Job.linkedQuestions) var linkedJobs: [Job]?
-    
-    init(text: String, category: String = "General") {
+    var dateAnswered: Date?
+
+    // NEW (V1.1+)
+    var tip: String?
+    var exampleAnswer: String?
+
+    init(
+        text: String,
+        category: String = "General",
+        tip: String? = nil,
+        exampleAnswer: String? = nil
+    ) {
         self.id = UUID()
         self.text = text
         self.category = category
@@ -22,5 +28,8 @@ final class Question {
         self.answerText = ""
         self.dateAdded = Date()
         self.dateAnswered = nil
+        self.tip = tip
+        self.exampleAnswer = exampleAnswer
     }
 }
+

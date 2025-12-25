@@ -60,7 +60,7 @@ struct HomeView: View {
             return "Today’s focus: Add your first job"
         }
         if allStories.isEmpty {
-            return "Today’s focus: Capture 1 moment"
+            return "Today’s focus: Capture 1 story"
         }
         if answeredQuestions.isEmpty {
             return "Today’s focus: Answer 1 question"
@@ -170,7 +170,7 @@ struct HomeView: View {
                                 .font(.headline)
                                 .foregroundStyle(Color.ink900)
 
-                            Text("Add your first job and capture your first moment.")
+                            Text("Add your first job and capture your first story.")
                                 .font(.subheadline)
                                 .foregroundStyle(Color.ink600)
 
@@ -195,7 +195,7 @@ struct HomeView: View {
                                     selectedTab = .stories
                                     router.presentAddMoment = true
                                 } label: {
-                                    Text("Write a Moment")
+                                    Text("Write a Story")
                                         .fontWeight(.bold)
                                         .padding(.vertical, 10)
                                         .frame(maxWidth: .infinity)
@@ -205,7 +205,7 @@ struct HomeView: View {
                                         .clipShape(Capsule())
                                 }
                                 .buttonStyle(.plain)
-                                .accessibilityHint("Switches to Career Moments tab and opens Add Moment")
+                                .accessibilityHint("Switches to Stories tab and opens Add Story")
                             }
                         }
                         .padding()
@@ -226,11 +226,11 @@ struct HomeView: View {
                             .accessibilityHint("Opens Jobs tab")
 
                             Button { selectedTab = .stories } label: {
-                                StatCard(title: "Moments", value: "\(allStories.count)", icon: "book.closed.fill", color: Color.blue)
+                                StatCard(title: "Stories", value: "\(allStories.count)", icon: "book.closed.fill", color: Color.blue)
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("Moments, \(allStories.count)")
-                            .accessibilityHint("Opens Career Moments tab")
+                            .accessibilityLabel("Stories, \(allStories.count)")
+                            .accessibilityHint("Opens Stories tab")
                         }
                         .padding(.horizontal)
 
@@ -306,7 +306,7 @@ struct HomeView: View {
                             selectedTab = .stories
                             router.presentAddMoment = true
                         } label: {
-                            Text("+ Add Moment")
+                            Text("+ Add Story")
                                 .fontWeight(.bold)
                                 .padding(.vertical, 10)
                                 .frame(maxWidth: .infinity)
@@ -316,7 +316,7 @@ struct HomeView: View {
                                 .clipShape(Capsule())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityHint("Switches to Career Moments tab and opens Add Moment")
+                        .accessibilityHint("Switches to Stories tab and opens Add Story")
                     }
                     .padding(.horizontal)
 
@@ -369,7 +369,7 @@ struct HomeView: View {
                     showResetDoneAlert = true
                 }
             } message: {
-                Text("This will delete Jobs, Questions, and Career Moments, then reseed from JSON.")
+                Text("This will delete Jobs, Questions, and Stories, then reseed from JSON.")
             }
             .alert("Reset Complete", isPresented: $showResetDoneAlert) {
                 Button("OK") { }

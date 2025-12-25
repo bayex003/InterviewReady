@@ -6,6 +6,8 @@ struct InterviewReadyApp: App {
     // Onboarding State
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
+    @StateObject private var purchaseManager = PurchaseManager()
+
     // Container is created after first frame to avoid long blank launch
     @State private var container: ModelContainer?
     @State private var containerLoadError: String?
@@ -27,6 +29,7 @@ struct InterviewReadyApp: App {
                     }
                     .transition(.opacity)
                     .modelContainer(container)
+                    .environmentObject(purchaseManager)
 
                 } else if let containerLoadError {
                     // If something goes wrong, show a simple error instead of a blank screen

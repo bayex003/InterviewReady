@@ -4,6 +4,7 @@ import SwiftData
 struct AddStoryView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var purchaseManager: PurchaseManager
 
     // Form Inputs
     @State private var title = ""
@@ -12,6 +13,10 @@ struct AddStoryView: View {
     @State private var task = ""
     @State private var action = ""
     @State private var result = ""
+    @State private var showPaywall = false
+    @State private var showScanner = false
+    @State private var showInsertPicker = false
+    @State private var scannedText = ""
 
     let categories = ["General", "Leadership", "Conflict", "Challenge", "Success", "Failure"]
 
@@ -61,6 +66,44 @@ struct AddStoryView: View {
                     Button("Save") { saveStory() }
                         .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Scan Notes") {
+                        ProGate(isPro: purchaseManager.isPro, isPaywallPresented: $showPaywall)
+                            .requirePro {
+                                showScanner = true
+                            }
+                    }
+                }
+            }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+                    .environmentObject(purchaseManager)
+            }
+            .sheet(isPresented: $showScanner) {
+                DocumentScannerView(onSuccess: { images in
+                    showScanner = false
+                    OCRService.recognizeText(in: images) { result in
+                        if case .success(let text) = result {
+                            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !trimmed.isEmpty else { return }
+                            scannedText = text
+                            showInsertPicker = true
+                        }
+                    }
+                }, onCancel: {
+                    showScanner = false
+                }, onError: { _ in
+                    showScanner = false
+                })
+            }
+            .sheet(isPresented: $showInsertPicker) {
+                ScanInsertPickerView(
+                    scannedText: scannedText,
+                    situation: $situation,
+                    task: $task,
+                    action: $action,
+                    result: $result
+                )
             }
         }
     }
@@ -92,4 +135,3 @@ struct AddStoryView: View {
         }
     }
 }
-

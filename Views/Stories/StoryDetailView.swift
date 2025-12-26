@@ -2,6 +2,12 @@ import SwiftUI
 
 struct StoryDetailView: View {
     @Bindable var story: Story
+    @EnvironmentObject private var purchaseManager: PurchaseManager
+
+    @State private var showPaywall = false
+    @State private var showScanner = false
+    @State private var showInsertPicker = false
+    @State private var scannedText = ""
 
     var body: some View {
         Form {
@@ -21,6 +27,46 @@ struct StoryDetailView: View {
         .hidesFloatingTabBar()
         .navigationTitle("Edit Career Moment")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Scan Notes") {
+                    ProGate(isPro: purchaseManager.isPro, isPaywallPresented: $showPaywall)
+                        .requirePro {
+                            showScanner = true
+                        }
+                }
+            }
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(purchaseManager)
+        }
+        .sheet(isPresented: $showScanner) {
+            DocumentScannerView(onSuccess: { images in
+                showScanner = false
+                OCRService.recognizeText(in: images) { result in
+                    if case .success(let text) = result {
+                        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else { return }
+                        scannedText = text
+                        showInsertPicker = true
+                    }
+                }
+            }, onCancel: {
+                showScanner = false
+            }, onError: { _ in
+                showScanner = false
+            })
+        }
+        .sheet(isPresented: $showInsertPicker) {
+            ScanInsertPickerView(
+                scannedText: scannedText,
+                situation: $story.situation,
+                task: $story.task,
+                action: $story.action,
+                result: $story.result
+            )
+        }
     }
 
     private func starSection(title: String, text: Binding<String>, placeholder: String) -> some View {
@@ -36,4 +82,3 @@ struct StoryDetailView: View {
         }
     }
 }
-

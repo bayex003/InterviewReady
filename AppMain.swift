@@ -6,6 +6,7 @@
 // - App compiles and runs
 
 import SwiftUI
+import SwiftData
 
 @main
 struct InterviewReadyApp: App {

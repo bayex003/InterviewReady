@@ -1,8 +1,11 @@
 import Foundation
 import SwiftData
+import Combine
 
 @MainActor
 final class AppDataController: ObservableObject {
+    let objectWillChange = ObservableObjectPublisher()
+    
     @Published var container: ModelContainer?
     @Published var loadError: String?
     @Published var isUsingCloud = false
@@ -66,8 +69,8 @@ final class AppDataController: ObservableObject {
     private func makeLocalContainer() throws -> ModelContainer {
         let configuration = try ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: false,
-            url: storeURL(filename: "InterviewReady_local.store")
+            url: storeURL(filename: "InterviewReady_local.store"),
+            allowsSave: true
         )
         return try ModelContainer(for: schema, configurations: [configuration])
     }
@@ -75,8 +78,8 @@ final class AppDataController: ObservableObject {
     private func makeCloudContainer() throws -> ModelContainer {
         let configuration = try ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: false,
             url: storeURL(filename: "InterviewReady_cloud.store"),
+            allowsSave: true,
             cloudKitDatabase: .automatic
         )
         return try ModelContainer(for: schema, configurations: [configuration])
@@ -160,3 +163,4 @@ final class AppDataController: ObservableObject {
         try cloudContext.save()
     }
 }
+

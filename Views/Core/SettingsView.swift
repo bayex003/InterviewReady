@@ -108,7 +108,7 @@ struct SettingsView: View {
     // MARK: - Sections (split up for compiler)
 
     private var proSection: some View {
-        Section("Pro") {
+        Section {
             if purchaseManager.isPro {
                 HStack {
                     Text("InterviewReady Pro")
@@ -146,6 +146,8 @@ struct SettingsView: View {
                 }
             }
             .disabled(isRefreshingProStatus)
+        } header: {
+            Text("Pro")
         } footer: {
             if isRestoring {
                 Text("Restoring…")
@@ -249,7 +251,7 @@ struct SettingsView: View {
     }
 
     private var aboutSection: some View {
-        Section("About") {
+        Section {
             HStack {
                 Text("Version")
                 Spacer()
@@ -262,6 +264,8 @@ struct SettingsView: View {
                 Text(purchaseManager.isPro && dataController.isUsingCloud ? "On" : "Off")
                     .foregroundStyle(.secondary)
             }
+        } header: {
+            Text("About")
         } footer: {
             if !purchaseManager.isPro {
                 Text("Requires InterviewReady Pro.")

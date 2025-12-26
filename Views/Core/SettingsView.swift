@@ -31,6 +31,7 @@ struct SettingsView: View {
     @State private var restoreMessage: String?
     @State private var showRestoreAlert = false
     @State private var restoreAlertTitle = ""
+    @State private var isRefreshingProStatus = false
 
     // Export
     @State private var showShareSheet = false
@@ -135,6 +136,16 @@ struct SettingsView: View {
                 }
                 .disabled(isRestoring)
             }
+
+            Button {
+                refreshProStatus()
+            } label: {
+                HStack {
+                    Text("Refresh Pro Status")
+                    Spacer()
+                }
+            }
+            .disabled(isRefreshingProStatus)
         } footer: {
             if isRestoring {
                 Text("Restoring…")
@@ -251,6 +262,12 @@ struct SettingsView: View {
                 Text(purchaseManager.isPro && dataController.isUsingCloud ? "On" : "Off")
                     .foregroundStyle(.secondary)
             }
+        } footer: {
+            if !purchaseManager.isPro {
+                Text("Requires InterviewReady Pro.")
+            } else if !dataController.isUsingCloud {
+                Text("Sign into iCloud and enable iCloud Drive to sync.")
+            }
         }
     }
 
@@ -305,6 +322,18 @@ struct SettingsView: View {
                     restoreMessage = "We couldn’t find an active subscription."
                 }
                 showRestoreAlert = true
+            }
+        }
+    }
+
+    private func refreshProStatus() {
+        guard !isRefreshingProStatus else { return }
+        isRefreshingProStatus = true
+
+        Task {
+            await purchaseManager.refreshEntitlements()
+            await MainActor.run {
+                isRefreshingProStatus = false
             }
         }
     }

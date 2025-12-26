@@ -1,3 +1,9 @@
+// Manual test checklist:
+// - Scan -> OCR -> insert -> field updates once only
+// - Tapping Insert repeatedly doesn’t duplicate
+// - Empty/garbage OCR output disables Insert
+// - While processing, Scan Notes can’t be triggered again
+// - Simulator shows friendly message, no crash
 import SwiftUI
 import SwiftData
 
@@ -17,6 +23,7 @@ struct AddStoryView: View {
     @State private var showScanner = false
     @State private var showInsertPicker = false
     @State private var scannedText = ""
+    @State private var isProcessingScan = false
 
     let categories = ["General", "Leadership", "Conflict", "Challenge", "Success", "Failure"]
 
@@ -73,6 +80,20 @@ struct AddStoryView: View {
                                 showScanner = true
                             }
                     }
+                    .disabled(isProcessingScan)
+                }
+            }
+            .overlay {
+                if isProcessingScan {
+                    VStack(spacing: 8) {
+                        ProgressView()
+                        Text("Processing scan…")
+                            .font(.caption)
+                            .foregroundStyle(.ink600)
+                    }
+                    .padding(12)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
             .sheet(isPresented: $showPaywall) {
@@ -82,18 +103,22 @@ struct AddStoryView: View {
             .sheet(isPresented: $showScanner) {
                 DocumentScannerView(onSuccess: { images in
                     showScanner = false
+                    isProcessingScan = true
                     OCRService.recognizeText(in: images) { result in
+                        isProcessingScan = false
                         if case .success(let text) = result {
-                            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                            guard !trimmed.isEmpty else { return }
-                            scannedText = text
+                            let cleanedText = OCRService.cleanText(text)
+                            guard !cleanedText.isEmpty else { return }
+                            scannedText = cleanedText
                             showInsertPicker = true
                         }
                     }
                 }, onCancel: {
                     showScanner = false
+                    isProcessingScan = false
                 }, onError: { _ in
                     showScanner = false
+                    isProcessingScan = false
                 })
             }
             .sheet(isPresented: $showInsertPicker) {

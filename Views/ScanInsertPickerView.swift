@@ -1,3 +1,9 @@
+// Manual test checklist:
+// - Scan -> OCR -> insert -> field updates once only
+// - Tapping Insert repeatedly doesn’t duplicate
+// - Empty/garbage OCR output disables Insert
+// - While processing, Scan Notes can’t be triggered again
+// - Simulator shows friendly message, no crash
 import SwiftUI
 
 struct ScanInsertPickerView: View {
@@ -18,6 +24,11 @@ struct ScanInsertPickerView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var selectedField: TargetField = .situation
+    @State private var hasInserted = false
+
+    private var cleanedText: String {
+        OCRService.cleanText(scannedText)
+    }
 
     var body: some View {
         NavigationStack {
@@ -33,10 +44,13 @@ struct ScanInsertPickerView: View {
                 .pickerStyle(.segmented)
 
                 Button("Insert") {
+                    guard !hasInserted else { return }
                     insertText()
+                    hasInserted = true
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(cleanedText.isEmpty || hasInserted)
 
                 Spacer()
             }
@@ -47,7 +61,7 @@ struct ScanInsertPickerView: View {
     }
 
     private func insertText() {
-        let trimmed = scannedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = cleanedText
         guard !trimmed.isEmpty else { return }
 
         switch selectedField {
@@ -63,9 +77,10 @@ struct ScanInsertPickerView: View {
     }
 
     private func insert(_ newText: String, into existing: String) -> String {
-        if existing.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        let existingTrimmed = existing.trimmingCharacters(in: .whitespacesAndNewlines)
+        if existingTrimmed.isEmpty {
             return newText
         }
-        return existing + "\n\n" + newText
+        return existingTrimmed + "\n\n" + newText
     }
 }

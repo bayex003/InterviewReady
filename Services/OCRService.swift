@@ -1,3 +1,9 @@
+// Manual test checklist:
+// - Scan -> OCR -> insert -> field updates once only
+// - Tapping Insert repeatedly doesn’t duplicate
+// - Empty/garbage OCR output disables Insert
+// - While processing, Scan Notes can’t be triggered again
+// - Simulator shows friendly message, no crash
 import UIKit
 import Vision
 
@@ -40,12 +46,14 @@ enum OCRService {
                 .compactMap { $0.topCandidates(1).first?.string }
                 .joined(separator: "\n")
 
-            if !pageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                pageTexts.append(pageText)
+            let cleanedPageText = cleanText(pageText)
+            if !cleanedPageText.isEmpty {
+                pageTexts.append(cleanedPageText)
             }
         }
 
-        return pageTexts.joined(separator: "\n\n---\n\n")
+        let combinedText = pageTexts.joined(separator: "\n\n---\n\n")
+        return cleanText(combinedText)
     }
 
     private static func cgImage(from image: UIImage) -> CGImage? {
@@ -59,5 +67,16 @@ enum OCRService {
 
         let context = CIContext(options: nil)
         return context.createCGImage(ciImage, from: ciImage.extent)
+    }
+
+    static func cleanText(_ text: String) -> String {
+        var cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return "" }
+
+        cleaned = cleaned.replacingOccurrences(of: " {2,}", with: " ", options: .regularExpression)
+        cleaned = cleaned.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
+        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return cleaned.isEmpty ? "" : cleaned
     }
 }

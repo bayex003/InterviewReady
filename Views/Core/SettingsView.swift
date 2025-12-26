@@ -22,8 +22,10 @@ struct SettingsView: View {
     // Paywall
     @State private var showPaywall = false
 
-    // Export (only computed for Pro users)
-    @State private var exportURL: URL?
+    // Export
+    @State private var showShareSheet = false
+    @State private var shareItems: [Any] = []
+    @State private var showExportError = false
 
     // MARK: - Bindings
 
@@ -53,15 +55,12 @@ struct SettingsView: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .onAppear {
-                prepareExportIfNeeded()
-            }
-            .onChange(of: purchaseManager.isPro) { _, _ in
-                prepareExportIfNeeded()
-            }
             .sheet(isPresented: $showPaywall) {
                 PaywallView()
                     .environmentObject(purchaseManager)
+            }
+            .sheet(isPresented: $showShareSheet) {
+                ShareSheet(items: shareItems)
             }
             .alert("Reset App Data?", isPresented: $showResetConfirmation) {
                 Button("Cancel", role: .cancel) { }
@@ -75,6 +74,11 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text("Your app has been reset to a clean state.")
+            }
+            .alert("Export Failed", isPresented: $showExportError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Unable to generate the export file. Please try again.")
             }
         }
     }
@@ -124,7 +128,14 @@ struct SettingsView: View {
     @ViewBuilder
     private var exportRow: some View {
         if purchaseManager.isPro {
-            ShareLink(item: exportURL ?? FileManager.default.temporaryDirectory) {
+            Button {
+                if let exportURL = DataExportManager.generateExportFile(context: modelContext) {
+                    shareItems = [exportURL]
+                    showShareSheet = true
+                } else {
+                    showExportError = true
+                }
+            } label: {
                 HStack {
                     Image(systemName: "square.and.arrow.up")
                         .foregroundStyle(Color.sage500)
@@ -132,6 +143,7 @@ struct SettingsView: View {
                         .foregroundStyle(Color.ink900)
                 }
             }
+            .buttonStyle(.plain)
         } else {
             Button {
                 showPaywall = true
@@ -190,16 +202,6 @@ struct SettingsView: View {
     }
 
     // MARK: - Helpers
-
-    private func prepareExportIfNeeded() {
-        guard purchaseManager.isPro else {
-            exportURL = nil
-            return
-        }
-        if exportURL == nil {
-            exportURL = DataExportManager.generateExportFile(context: modelContext)
-        }
-    }
 
     private func scheduleNotification() {
         let date = Date(timeIntervalSince1970: dailyReminderTime)

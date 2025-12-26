@@ -26,6 +26,12 @@ struct SettingsView: View {
     // Paywall
     @State private var showPaywall = false
 
+    // Restore Purchases
+    @State private var isRestoring = false
+    @State private var restoreMessage: String?
+    @State private var showRestoreAlert = false
+    @State private var restoreAlertTitle = ""
+
     // Export
     @State private var showShareSheet = false
     @State private var shareItems: [Any] = []
@@ -49,6 +55,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                proSection
                 remindersSection
                 dataManagementSection
                 feedbackSection
@@ -87,10 +94,53 @@ struct SettingsView: View {
             } message: {
                 Text("We couldn’t generate the export file. Please try again.")
             }
+            .alert(restoreAlertTitle, isPresented: $showRestoreAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                if let restoreMessage {
+                    Text(restoreMessage)
+                }
+            }
         }
     }
 
     // MARK: - Sections (split up for compiler)
+
+    private var proSection: some View {
+        Section("Pro") {
+            if purchaseManager.isPro {
+                HStack {
+                    Text("InterviewReady Pro")
+                    Spacer()
+                    Text("Active")
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Button {
+                    showPaywall = true
+                } label: {
+                    HStack {
+                        Text("Upgrade to Pro")
+                        Spacer()
+                    }
+                }
+
+                Button {
+                    restorePurchases()
+                } label: {
+                    HStack {
+                        Text("Restore Purchases")
+                        Spacer()
+                    }
+                }
+                .disabled(isRestoring)
+            }
+        } footer: {
+            if isRestoring {
+                Text("Restoring…")
+            }
+        }
+    }
 
     private var remindersSection: some View {
         Section("Reminders") {
@@ -235,5 +285,27 @@ struct SettingsView: View {
         }
 
         isGeneratingExport = false
+    }
+
+    private func restorePurchases() {
+        guard !isRestoring else { return }
+        isRestoring = true
+
+        Task {
+            await purchaseManager.restore()
+            await purchaseManager.refreshEntitlements()
+
+            await MainActor.run {
+                isRestoring = false
+                if purchaseManager.isPro {
+                    restoreAlertTitle = "Restored"
+                    restoreMessage = "Pro unlocked."
+                } else {
+                    restoreAlertTitle = "No purchases found"
+                    restoreMessage = "We couldn’t find an active subscription."
+                }
+                showRestoreAlert = true
+            }
+        }
     }
 }

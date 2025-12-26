@@ -10,6 +10,8 @@
 		F62008132EEC8E1000B94259 /* AppMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62008122EEC8E0B00B94259 /* AppMain.swift */; };
 		F620087B2EECE57E00B94259 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F620087A2EECE57C00B94259 /* OnboardingView.swift */; };
 		F62008952EEDF5FE00B94259 /* AppBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62008942EEDF5F900B94259 /* AppBackgroundView.swift */; };
+		F6C0A0012F1A0001 /* DocumentScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C0A0002F1A0001 /* DocumentScannerView.swift */; };
+		F6C0A0032F1A0001 /* ScanInsertPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C0A0022F1A0001 /* ScanInsertPickerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +21,8 @@
 		F620086D2EECBB9200B94259 /* InterviewReady-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "InterviewReady-Info.plist"; sourceTree = "<group>"; };
 		F620087A2EECE57C00B94259 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		F62008942EEDF5F900B94259 /* AppBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBackgroundView.swift; sourceTree = "<group>"; };
+		F6C0A0002F1A0001 /* DocumentScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentScannerView.swift; sourceTree = "<group>"; };
+		F6C0A0022F1A0001 /* ScanInsertPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanInsertPickerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -196,6 +200,8 @@
 			children = (
 				F62008792EECE56500B94259 /* Onboarding */,
 				F62008452EEC97B200B94259 /* RootContentView.swift */,
+				F6C0A0002F1A0001 /* DocumentScannerView.swift */,
+				F6C0A0022F1A0001 /* ScanInsertPickerView.swift */,
 				F620083D2EEC902000B94259 /* Stories */,
 				F620083C2EEC901A00B94259 /* Questions */,
 				F620083B2EEC901000B94259 /* Jobs */,
@@ -295,6 +301,8 @@
 				F620087B2EECE57E00B94259 /* OnboardingView.swift in Sources */,
 				F62008132EEC8E1000B94259 /* AppMain.swift in Sources */,
 				F62008952EEDF5FE00B94259 /* AppBackgroundView.swift in Sources */,
+				F6C0A0012F1A0001 /* DocumentScannerView.swift in Sources */,
+				F6C0A0032F1A0001 /* ScanInsertPickerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

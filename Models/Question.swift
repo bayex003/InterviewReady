@@ -10,6 +10,9 @@ final class Question {
     var answerText: String
     var dateAdded: Date
     var dateAnswered: Date?
+    var isCustom: Bool
+    var createdAt: Date
+    var updatedAt: Date
 
     // NEW (V1.1+)
     var tip: String?
@@ -18,6 +21,7 @@ final class Question {
     init(
         text: String,
         category: String = "General",
+        isCustom: Bool = false,
         tip: String? = nil,
         exampleAnswer: String? = nil
     ) {
@@ -28,8 +32,11 @@ final class Question {
         self.answerText = ""
         self.dateAdded = Date()
         self.dateAnswered = nil
+        self.isCustom = isCustom
+        let now = Date()
+        self.createdAt = now
+        self.updatedAt = now
         self.tip = tip
         self.exampleAnswer = exampleAnswer
     }
 }
-

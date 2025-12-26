@@ -76,6 +76,7 @@ final class DataSeeder {
                 let q = Question(
                     text: item.text,
                     category: item.category,
+                    isCustom: false,
                     tip: item.tip?.trimmingCharacters(in: .whitespacesAndNewlines),
                     exampleAnswer: item.exampleAnswer?.trimmingCharacters(in: .whitespacesAndNewlines)
                 )

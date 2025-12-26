@@ -6,7 +6,6 @@
 // - App compiles and runs
 
 import SwiftUI
-import SwiftData
 
 @main
 struct InterviewReadyApp: App {
@@ -14,10 +13,7 @@ struct InterviewReadyApp: App {
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
     @StateObject private var purchaseManager = PurchaseManager()
-
-    // Container is created after first frame to avoid long blank launch
-    @State private var container: ModelContainer?
-    @State private var containerLoadError: String?
+    @StateObject private var dataController = AppDataController()
 
     // Fade transition into the real app
     @State private var isAppReady = false
@@ -25,7 +21,7 @@ struct InterviewReadyApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                if let container {
+                if let container = dataController.container {
                     // THE REAL APP
                     Group {
                         if hasSeenOnboarding {
@@ -37,8 +33,9 @@ struct InterviewReadyApp: App {
                     .transition(.opacity)
                     .modelContainer(container)
                     .environmentObject(purchaseManager)
+                    .environmentObject(dataController)
 
-                } else if let containerLoadError {
+                } else if let containerLoadError = dataController.loadError {
                     // If something goes wrong, show a simple error instead of a blank screen
                     VStack(spacing: 12) {
                         Text("Couldn’t start InterviewReady")
@@ -53,10 +50,22 @@ struct InterviewReadyApp: App {
                 } else {
                     // SHOW YOUR EXISTING SPLASH IMMEDIATELY
                     SplashScreenView()
-                        .transition(.opacity)
+                    .transition(.opacity)
                 }
             }
             .animation(.easeInOut(duration: 0.5), value: isAppReady)
+            .onChange(of: dataController.container != nil) { _, newValue in
+                if newValue {
+                    isAppReady = true
+                }
+            }
+            .onChange(of: purchaseManager.isPro) { _, isPro in
+                if isPro {
+                    Task {
+                        await dataController.switchToCloudIfPro()
+                    }
+                }
+            }
             .task {
                 // Runs once on launch
                 await prepareApp()
@@ -66,21 +75,6 @@ struct InterviewReadyApp: App {
 
     @MainActor
     private func prepareApp() async {
-        do {
-            // Create the SwiftData container AFTER UI is already showing splash
-            let schema = Schema([Job.self, Question.self, Story.self, PracticeAttempt.self])
-            let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-            let newContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
-
-            // Seed data
-            DataSeeder.shared.seedDataIfNeeded(modelContext: newContainer.mainContext)
-
-            // Switch into the app
-            container = newContainer
-            isAppReady = true
-
-        } catch {
-            containerLoadError = error.localizedDescription
-        }
+        await dataController.loadInitialContainer()
     }
 }

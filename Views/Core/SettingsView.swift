@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var purchaseManager: PurchaseManager
+    @EnvironmentObject private var dataController: AppDataController
 
     // Notification State
     @AppStorage("isDailyReminderEnabled") private var isDailyReminderEnabled = false
@@ -179,6 +180,12 @@ struct SettingsView: View {
                 Text(appVersion)
                     .foregroundStyle(.secondary)
             }
+            HStack {
+                Text("iCloud Sync")
+                Spacer()
+                Text(purchaseManager.isPro && dataController.isUsingCloud ? "On" : "Off")
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -210,4 +217,3 @@ struct SettingsView: View {
         }
     }
 }
-

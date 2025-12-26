@@ -30,7 +30,7 @@ final class DataSeeder {
 
     @MainActor
     func seedDataIfNeeded(modelContext: ModelContext) {
-        if UserDefaults.standard.bool(forKey: seedKey) { return }
+        if !isStoreEmpty(modelContext: modelContext) { return }
 
         print("🌱 Seeding initial data...")
         seedQuestions(context: modelContext)
@@ -43,6 +43,19 @@ final class DataSeeder {
             print("✅ Seeding complete.")
         } catch {
             print("❌ Failed to save seeded data: \(error)")
+        }
+    }
+
+    @MainActor
+    private func isStoreEmpty(modelContext: ModelContext) -> Bool {
+        do {
+            let jobs = try modelContext.fetchCount(FetchDescriptor<Job>())
+            let stories = try modelContext.fetchCount(FetchDescriptor<Story>())
+            let questions = try modelContext.fetchCount(FetchDescriptor<Question>())
+            return jobs + stories + questions == 0
+        } catch {
+            print("⚠️ Failed to check store contents: \(error)")
+            return false
         }
     }
 
@@ -143,4 +156,3 @@ final class DataSeeder {
     }
     #endif
 }
-

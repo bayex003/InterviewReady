@@ -1,11 +1,26 @@
+// Testing Checklist:
+// - Manual: open question, type something, go back → attempt added
+// - Manual: open question, do nothing, go back → no attempt
+// - Drill: stop recording on a question → drill attempt added
+// - Attempt history: Pro user sees list; free user sees locked message + paywall opens
+// - App compiles and runs
+
 import SwiftUI
 import SwiftData
 
 struct QuestionDetailView: View {
     @Bindable var question: Question
 
+    @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var purchaseManager: PurchaseManager
+
+    @Query(sort: \PracticeAttempt.createdAt, order: .reverse) private var allAttempts: [PracticeAttempt]
+
     @State private var showTip = false
     @State private var showExample = false
+    @State private var showHistory = false
+    @State private var showPaywall = false
+    @State private var didEditThisSession = false
 
     var body: some View {
         ScrollView {
@@ -107,6 +122,57 @@ struct QuestionDetailView: View {
                     )
                 }
 
+                DisclosureCard(
+                    title: "Attempt History",
+                    systemImage: "clock.arrow.circlepath",
+                    isExpanded: $showHistory
+                ) {
+                    let attemptsForQuestion = allAttempts.filter {
+                        ($0.questionId == question.id) || ($0.questionTextSnapshot == question.text)
+                    }
+                    let recentAttempts = attemptsForQuestion.prefix(10)
+
+                    if purchaseManager.isPro {
+                        if recentAttempts.isEmpty {
+                            Text("No attempts yet.")
+                                .font(.body)
+                                .foregroundStyle(Color.ink600)
+                        } else {
+                            ForEach(recentAttempts, id: \.id) { attempt in
+                                HStack {
+                                    Text(attempt.createdAt, style: .date)
+                                        .font(.body)
+                                        .foregroundStyle(Color.ink900)
+
+                                    Spacer()
+
+                                    Text(attempt.source == "manual" ? "Manual" : "Drill")
+                                        .font(.subheadline)
+                                        .foregroundStyle(Color.ink600)
+                                }
+                            }
+                        }
+                    } else {
+                        Text("Pro feature. Upgrade to view your attempt history.")
+                            .font(.body)
+                            .foregroundStyle(Color.ink600)
+
+                        Button {
+                            showPaywall = true
+                        } label: {
+                            Text("Upgrade to Pro")
+                                .fontWeight(.bold)
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.clear)
+                                .foregroundStyle(Color.ink900)
+                                .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
+                                .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
                 Spacer(minLength: 60)
             }
             .padding()
@@ -115,13 +181,28 @@ struct QuestionDetailView: View {
         .tapToDismissKeyboard()
         .hidesFloatingTabBar()
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: question.answerText) { _, _ in
+            didEditThisSession = true
+        }
         .onDisappear {
-            if !question.answerText.isEmpty {
+            if !question.answerText.isEmpty, didEditThisSession {
                 question.dateAnswered = Date()
                 question.isAnswered = true
-            } else {
+
+                let attempt = PracticeAttempt(
+                    source: "manual",
+                    questionTextSnapshot: question.text,
+                    questionId: question.id
+                )
+                modelContext.insert(attempt)
+                try? modelContext.save()
+            } else if question.answerText.isEmpty {
                 question.isAnswered = false
             }
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(purchaseManager)
         }
     }
 }
@@ -183,4 +264,3 @@ private struct DisclosureCard<Content: View>: View {
         .animation(.snappy(duration: 0.28), value: isExpanded)
     }
 }
-

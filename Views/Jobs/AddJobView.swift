@@ -14,12 +14,29 @@ struct AddJobView: View {
     @State private var hasScheduledInterview = false
     @State private var generalNotes = ""
 
+    // ✅ V2 (free): Optional fields
+    @State private var salary = ""
+    @State private var location = ""
+
     var body: some View {
         NavigationStack {
             Form {
                 Section("Job Details") {
                     TextField("Company Name (e.g. Spotify)", text: $companyName)
+                        .textInputAutocapitalization(.words)
+
                     TextField("Role Title (e.g. iOS Engineer)", text: $roleTitle)
+                        .textInputAutocapitalization(.words)
+
+                    // ✅ New fields (optional)
+                    TextField("Salary (optional) (e.g. £55k–£65k, £30/hr)", text: $salary)
+                        .keyboardType(.numbersAndPunctuation)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+
+                    TextField("Location (optional) (e.g. Manchester · Hybrid)", text: $location)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
 
                     Picker("Current Stage", selection: $selectedStage) {
                         ForEach(JobStage.allCases, id: \.self) { stage in
@@ -55,19 +72,31 @@ struct AddJobView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") { saveJob() }
-                        .disabled(companyName.isEmpty || roleTitle.isEmpty)
+                        .disabled(companyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                                  roleTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
-            .tapToDismissKeyboard()
+            .formKeyboardBehavior()
+            .floatingTabBarHidden(true)
+
         }
     }
 
     private func saveJob() {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
 
-        let newJob = Job(companyName: companyName, roleTitle: roleTitle, stage: selectedStage)
+        let trimmedCompany = companyName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedRole = roleTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        let newJob = Job(companyName: trimmedCompany, roleTitle: trimmedRole, stage: selectedStage)
         newJob.dateApplied = applicationDate
         newJob.generalNotes = generalNotes
+
+        let trimmedSalary = salary.trimmingCharacters(in: .whitespacesAndNewlines)
+        newJob.salary = trimmedSalary.isEmpty ? nil : trimmedSalary
+
+        let trimmedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
+        newJob.location = trimmedLocation.isEmpty ? nil : trimmedLocation
 
         if hasScheduledInterview {
             newJob.nextInterviewDate = nextInterviewDate

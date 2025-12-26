@@ -111,7 +111,7 @@ final class DataSeeder {
                 context.insert(s)
             }
 
-            print("✅ Seeded \(items.count) career moments")
+            print("✅ Seeded \(items.count) stories")
         } catch {
             print("❌ Error seeding stories: \(error)")
         }

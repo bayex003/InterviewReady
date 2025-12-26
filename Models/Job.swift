@@ -17,12 +17,21 @@ class Job {
     var dateApplied: Date
     var nextInterviewDate: Date?
     var generalNotes: String
-    
+
+    // ✅ V2 (free): Details-only fields
+    var salary: String?
+    var location: String?
+
     init(companyName: String, roleTitle: String, stage: JobStage = .saved) {
         self.companyName = companyName
         self.roleTitle = roleTitle
         self.stage = stage
         self.dateApplied = Date()
         self.generalNotes = ""
+
+        // Defaults for existing/new jobs
+        self.salary = nil
+        self.location = nil
     }
 }
+

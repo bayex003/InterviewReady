@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 struct PaywallView: View {
     @EnvironmentObject private var purchaseManager: PurchaseManager
@@ -6,6 +7,9 @@ struct PaywallView: View {
 
     @State private var isWorking = false
     @State private var message: String?
+
+    // Price display
+    @State private var priceText: String? = nil
 
     var body: some View {
         NavigationStack {
@@ -44,6 +48,12 @@ struct PaywallView: View {
                         .foregroundStyle(Color.ink900)
                 }
             }
+            .task {
+                await loadPrice()
+            }
+            .onChange(of: purchaseManager.isPro) { _, newValue in
+                if newValue { dismiss() }
+            }
         }
     }
 
@@ -56,6 +66,13 @@ struct PaywallView: View {
             Text("Unlock lifetime access to Pro features.")
                 .font(.subheadline)
                 .foregroundStyle(Color.ink600)
+
+            if let priceText {
+                Text("Price: \(priceText)")
+                    .font(.caption)
+                    .foregroundStyle(Color.ink600)
+                    .padding(.top, 2)
+            }
         }
     }
 
@@ -76,30 +93,49 @@ struct PaywallView: View {
         Button {
             Task { await unlock() }
         } label: {
-            Text(isWorking ? "Processing…" : "Unlock Pro (One-time)")
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.sage500)
-                .foregroundColor(.white)
-                .clipShape(Capsule())
+            HStack(spacing: 10) {
+                if isWorking {
+                    ProgressView()
+                        .tint(.white)
+                }
+                Text(isWorking ? "Processing…" : primaryTitle)
+            }
+            .fontWeight(.bold)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(Color.sage500)
+            .foregroundColor(.white)
+            .clipShape(Capsule())
         }
         .buttonStyle(.plain)
         .disabled(isWorking)
+    }
+
+    private var primaryTitle: String {
+        if let priceText {
+            return "Unlock Pro (\(priceText))"
+        }
+        return "Unlock Pro (One-time)"
     }
 
     private var secondaryButton: some View {
         Button {
             Task { await restore() }
         } label: {
-            Text(isWorking ? "Restoring…" : "Restore Purchase")
-                .fontWeight(.semibold)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.surfaceWhite)
-                .foregroundStyle(Color.ink900)
-                .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
-                .clipShape(Capsule())
+            HStack(spacing: 10) {
+                if isWorking {
+                    ProgressView()
+                        .tint(Color.ink900)
+                }
+                Text(isWorking ? "Restoring…" : "Restore Purchase")
+            }
+            .fontWeight(.semibold)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(Color.surfaceWhite)
+            .foregroundStyle(Color.ink900)
+            .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
+            .clipShape(Capsule())
         }
         .buttonStyle(.plain)
         .disabled(isWorking)
@@ -109,7 +145,9 @@ struct PaywallView: View {
     private func unlock() async {
         message = nil
         isWorking = true
+
         await purchaseManager.purchase()
+
         isWorking = false
 
         if purchaseManager.isPro {
@@ -123,13 +161,39 @@ struct PaywallView: View {
     private func restore() async {
         message = nil
         isWorking = true
+
+        #if targetEnvironment(simulator)
+        // Simulator often triggers sign-in prompts and isn’t a reliable restore environment.
         await purchaseManager.restore()
         isWorking = false
-
+        if purchaseManager.isPro {
+            dismiss()
+        } else {
+            message = "Restore on Simulator can be unreliable. Try on a physical iPhone (or use a Sandbox tester)."
+        }
+        #else
+        await purchaseManager.restore()
+        isWorking = false
         if purchaseManager.isPro {
             dismiss()
         } else {
             message = "No purchases found to restore."
+        }
+        #endif
+    }
+
+    // MARK: - Price
+
+    @MainActor
+    private func loadPrice() async {
+        do {
+            let products = try await Product.products(for: [PurchaseManager.productId])
+            if let product = products.first {
+                priceText = product.displayPrice
+            }
+        } catch {
+            // Don’t show an error; keep it calm.
+            priceText = nil
         }
     }
 }
@@ -153,3 +217,4 @@ private struct BenefitRow: View {
         .font(.subheadline)
     }
 }
+

@@ -2,22 +2,24 @@ import SwiftUI
 
 struct JobDetailView: View {
     @Bindable var job: Job
-    
+
     var body: some View {
         Form {
-            // 1. Header Section
+            // 1) Header
             Section {
                 HStack {
-                    VStack(alignment: .leading) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(job.companyName)
                             .font(.title)
                             .fontWeight(.bold)
+
                         Text(job.roleTitle)
                             .font(.headline)
                             .foregroundStyle(.gray)
                     }
+
                     Spacer()
-                    // Stage Picker
+
                     Picker("Stage", selection: $job.stage) {
                         ForEach(JobStage.allCases, id: \.self) { stage in
                             Text(stage.rawValue).tag(stage)
@@ -30,12 +32,35 @@ struct JobDetailView: View {
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets())
             }
-            
-            // 2. Logistics
+
+            // 2) Role Details
+            Section("Role Details") {
+                TextField("Salary (e.g. £55k–£65k, £30/hr)", text: Binding(
+                    get: { job.salary ?? "" },
+                    set: { newValue in
+                        let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                        job.salary = trimmed.isEmpty ? nil : trimmed
+                    }
+                ))
+                .keyboardType(.numbersAndPunctuation)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+
+                TextField("Location (e.g. Manchester · Hybrid)", text: Binding(
+                    get: { job.location ?? "" },
+                    set: { newValue in
+                        let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                        job.location = trimmed.isEmpty ? nil : trimmed
+                    }
+                ))
+                .textInputAutocapitalization(.words)
+                .autocorrectionDisabled()
+            }
+
+            // 3) Logistics
             Section("Logistics") {
                 DatePicker("Date Applied", selection: $job.dateApplied, displayedComponents: .date)
-                
-                // Optional Interview Date
+
                 Toggle("Interview Scheduled?", isOn: Binding(
                     get: { job.nextInterviewDate != nil },
                     set: { hasDate in
@@ -44,7 +69,7 @@ struct JobDetailView: View {
                     }
                 ))
                 .tint(Color.sage500)
-                
+
                 if let _ = job.nextInterviewDate {
                     DatePicker("Interview Date", selection: Binding(
                         get: { job.nextInterviewDate ?? Date() },
@@ -53,16 +78,16 @@ struct JobDetailView: View {
                     .foregroundStyle(Color.sage500)
                 }
             }
-            
-            // 3. Notes (With Dictation!)
+
+            // 4) Notes
             Section("Notes & Research") {
-                ZStack(alignment: .bottomTrailing) {
-                    TextEditor(text: $job.generalNotes)
-                        .frame(minHeight: 150)
-                }
+                TextEditor(text: $job.generalNotes)
+                    .frame(minHeight: 150)
             }
         }
         .navigationTitle("Job Details")
         .navigationBarTitleDisplayMode(.inline)
+        .formKeyboardBehavior()
     }
 }
+

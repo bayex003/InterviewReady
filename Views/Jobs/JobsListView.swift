@@ -4,19 +4,35 @@ import SwiftData
 struct JobsListView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var router: AppRouter
+    @EnvironmentObject private var purchaseManager: PurchaseManager
 
     @Query(sort: \Job.dateApplied, order: .reverse) private var allJobs: [Job]
 
     @State private var searchText = ""
     @State private var showAddJob = false
+    @State private var showPaywall = false
     @State private var filterSelection = 0
+
+    // ✅ V2 free limit (Jobs)
+    private let freeActiveJobLimit = 3
+
+    // ✅ Only count "Active" jobs towards the cap
+    private var activeJobsCount: Int {
+        allJobs.filter { $0.stage != .rejected }.count
+    }
+
+    private var hasReachedFreeLimit: Bool {
+        !purchaseManager.isPro && activeJobsCount >= freeActiveJobLimit
+    }
 
     private var filteredJobs: [Job] {
         let jobsToFilter = allJobs.filter { job in
             if filterSelection == 0 { return job.stage != .rejected }
             else { return job.stage == .rejected }
         }
+
         if searchText.isEmpty { return jobsToFilter }
+
         return jobsToFilter.filter {
             $0.companyName.localizedCaseInsensitiveContains(searchText) ||
             $0.roleTitle.localizedCaseInsensitiveContains(searchText)
@@ -60,21 +76,41 @@ struct JobsListView: View {
             .navigationTitle("My Jobs")
             .searchable(text: $searchText)
             .toolbar {
-                Button { showAddJob = true } label: { Image(systemName: "plus") }
+                Button {
+                    handleAddTapped()
+                } label: {
+                    Image(systemName: "plus")
+                }
             }
-            .sheet(isPresented: $showAddJob) { AddJobView() }
+            .sheet(isPresented: $showAddJob) {
+                AddJobView()
+            }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+                    .environmentObject(purchaseManager)
+            }
             .onChange(of: router.presentAddJob) { _, newValue in
                 if newValue {
-                    showAddJob = true
+                    handleAddTapped()
                     router.presentAddJob = false
                 }
             }
         }
     }
 
+    private func handleAddTapped() {
+        if hasReachedFreeLimit {
+            showPaywall = true
+        } else {
+            showAddJob = true
+        }
+    }
+
     private func deleteJob(offsets: IndexSet) {
         withAnimation {
-            for index in offsets { modelContext.delete(filteredJobs[index]) }
+            for index in offsets {
+                modelContext.delete(filteredJobs[index])
+            }
         }
     }
 }
@@ -101,3 +137,4 @@ struct JobRow: View {
         .padding().background(Color.surfaceWhite).cornerRadius(16)
     }
 }
+

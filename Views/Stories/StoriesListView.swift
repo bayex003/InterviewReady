@@ -5,12 +5,20 @@ struct StoriesListView: View {
     @Query(sort: \Story.title) private var stories: [Story]
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var router: AppRouter
-
+    @EnvironmentObject private var purchaseManager: PurchaseManager
 
     @State private var searchText = ""
     @State private var showAddStory = false
+    @State private var showPaywall = false
 
-    var filteredStories: [Story] {
+    // MARK: - V2 Free Limit (Stories)
+    private let freeStoryLimit = 10
+
+    private var hasReachedFreeLimit: Bool {
+        !purchaseManager.isPro && stories.count >= freeStoryLimit
+    }
+
+    private var filteredStories: [Story] {
         let s = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !s.isEmpty else { return stories }
         return stories.filter { $0.title.localizedCaseInsensitiveContains(s) }
@@ -28,7 +36,7 @@ struct StoriesListView: View {
                             .font(.system(size: 60))
                             .foregroundStyle(Color.sage100)
 
-                        Text("No Career Moments Yet")
+                        Text("No Stories Yet")
                             .font(.headline)
                             .foregroundStyle(Color.ink900)
 
@@ -39,9 +47,9 @@ struct StoriesListView: View {
                             .padding(.horizontal)
 
                         Button {
-                            showAddStory = true
+                            handleAddTapped()
                         } label: {
-                            Text("Write a Moment")
+                            Text("Write a Story")
                                 .fontWeight(.bold)
                                 .padding()
                                 .padding(.horizontal, 12)
@@ -51,12 +59,12 @@ struct StoriesListView: View {
                         }
                         .padding(.top, 8)
                     }
+
                 } else {
                     // LIST (no accessory duplication)
                     List {
                         ForEach(filteredStories) { story in
                             Button {
-                                // Navigation via value (below) avoids odd accessory behaviour
                                 selectedStory = story
                             } label: {
                                 StoryRow(story: story)
@@ -69,11 +77,13 @@ struct StoriesListView: View {
                     .listStyle(.plain)
                 }
             }
-            .navigationTitle("Career Moments")
+            .navigationTitle("Stories")
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showAddStory = true } label: {
+                    Button {
+                        handleAddTapped()
+                    } label: {
                         Image(systemName: "plus")
                             .foregroundStyle(Color.ink900)
                     }
@@ -82,13 +92,17 @@ struct StoriesListView: View {
             .sheet(isPresented: $showAddStory) {
                 AddStoryView()
             }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+                    .environmentObject(purchaseManager)
+            }
             .tapToDismissKeyboard()
             .navigationDestination(item: $selectedStory) { story in
                 StoryDetailView(story: story)
             }
             .onChange(of: router.presentAddMoment) { _, newValue in
                 if newValue {
-                    showAddStory = true
+                    handleAddTapped()
                     router.presentAddMoment = false
                 }
             }
@@ -97,6 +111,15 @@ struct StoriesListView: View {
 
     // MARK: - Navigation
     @State private var selectedStory: Story?
+
+    // MARK: - Add gating
+    private func handleAddTapped() {
+        if hasReachedFreeLimit {
+            showPaywall = true
+        } else {
+            showAddStory = true
+        }
+    }
 
     // MARK: - Delete
     private func deleteStory(offsets: IndexSet) {
@@ -107,3 +130,4 @@ struct StoriesListView: View {
         }
     }
 }
+

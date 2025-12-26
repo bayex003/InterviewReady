@@ -17,7 +17,7 @@ class SpeechRecognizer: ObservableObject {
     init() {
         recognizer = SFSpeechRecognizer()
         Task(priority: .background) {
-            await verifyPermissions()
+            verifyPermissions()
         }
     }
     

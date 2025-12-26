@@ -4,102 +4,63 @@ import SwiftData
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    
+    @EnvironmentObject private var purchaseManager: PurchaseManager
+
     // Notification State
     @AppStorage("isDailyReminderEnabled") private var isDailyReminderEnabled = false
     @AppStorage("dailyReminderTime") private var dailyReminderTime: Double = 32400 // Default 9:00 AM
-    
+
     // Feedback configuration
-    let supportEmail = "support@example.com"
-    let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-    
-    // Alert State
+    private let supportEmail = "support@example.com"
+    private let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+
+    // Alerts
     @State private var showResetConfirmation = false
     @State private var showResetSuccess = false
-    
-    private var exportURL: URL {
-        if let url = DataExportManager.generateExportFile(context: modelContext) {
-            return url
-        }
-        return FileManager.default.temporaryDirectory
+
+    // Paywall
+    @State private var showPaywall = false
+
+    // Export (only computed for Pro users)
+    @State private var exportURL: URL?
+
+    // MARK: - Bindings
+
+    private var reminderTimeBinding: Binding<Date> {
+        Binding(
+            get: { Date(timeIntervalSince1970: dailyReminderTime) },
+            set: { newDate in
+                dailyReminderTime = newDate.timeIntervalSince1970
+                scheduleNotification()
+            }
+        )
     }
-    
+
+    // MARK: - Body
+
     var body: some View {
         NavigationStack {
             List {
-                // 1. NEW: Notifications Section
-                Section("Reminders") {
-                    Toggle("Daily Practice Reminder", isOn: $isDailyReminderEnabled)
-                        .tint(Color.sage500)
-                        .onChange(of: isDailyReminderEnabled) { _, newValue in
-                            if newValue {
-                                // Request permission when turned on
-                                NotificationManager.shared.requestPermission { granted in
-                                    if !granted { isDailyReminderEnabled = false }
-                                }
-                            }
-                            scheduleNotification()
-                        }
-                    
-                    if isDailyReminderEnabled {
-                        DatePicker("Time", selection: Binding(
-                            get: { Date(timeIntervalSince1970: dailyReminderTime) },
-                            set: { newDate in
-                                dailyReminderTime = newDate.timeIntervalSince1970
-                                scheduleNotification()
-                            }
-                        ), displayedComponents: .hourAndMinute)
-                    }
-                }
-                
-                // 2. Data Management
-                Section("Data Management") {
-                    ShareLink(item: exportURL) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.up")
-                                .foregroundStyle(Color.sage500)
-                            Text("Export All Data")
-                                .foregroundStyle(Color.ink900)
-                        }
-                    }
-                    
-                    Button(role: .destructive) {
-                        showResetConfirmation = true
-                    } label: {
-                        HStack {
-                            Image(systemName: "trash")
-                            Text("Reset All Data")
-                        }
-                    }
-                }
-                
-                // 3. Feedback
-                Section("Feedback") {
-                    Link(destination: URL(string: "mailto:\(supportEmail)?subject=InterviewReady%20Feedback%20(v\(appVersion))")!) {
-                        HStack {
-                            Image(systemName: "envelope.fill")
-                                .foregroundStyle(Color.sage500)
-                            Text("Send Feedback / Bug Report")
-                                .foregroundStyle(Color.ink900)
-                        }
-                    }
-                }
-                
-                // 4. About
-                Section("About") {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text(appVersion)
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                remindersSection
+                dataManagementSection
+                feedbackSection
+                aboutSection
             }
             .navigationTitle("Settings")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .onAppear {
+                prepareExportIfNeeded()
+            }
+            .onChange(of: purchaseManager.isPro) { _, _ in
+                prepareExportIfNeeded()
+            }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+                    .environmentObject(purchaseManager)
             }
             .alert("Reset App Data?", isPresented: $showResetConfirmation) {
                 Button("Cancel", role: .cancel) { }
@@ -116,12 +77,128 @@ struct SettingsView: View {
             }
         }
     }
-    
+
+    // MARK: - Sections (split up for compiler)
+
+    private var remindersSection: some View {
+        Section("Reminders") {
+            Toggle("Daily Practice Reminder", isOn: $isDailyReminderEnabled)
+                .tint(Color.sage500)
+                .onChange(of: isDailyReminderEnabled) { _, newValue in
+                    if newValue {
+                        NotificationManager.shared.requestPermission { granted in
+                            if !granted { isDailyReminderEnabled = false }
+                        }
+                    }
+                    scheduleNotification()
+                }
+
+            if isDailyReminderEnabled {
+                DatePicker("Time", selection: reminderTimeBinding, displayedComponents: .hourAndMinute)
+            }
+        }
+    }
+
+    private var dataManagementSection: some View {
+        Section {
+            exportRow
+
+            Button(role: .destructive) {
+                showResetConfirmation = true
+            } label: {
+                HStack {
+                    Image(systemName: "trash")
+                    Text("Reset All Data")
+                }
+            }
+        } header: {
+            Text("Data Management")
+        } footer: {
+            if !purchaseManager.isPro {
+                Text("Export is a Pro feature.")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var exportRow: some View {
+        if purchaseManager.isPro {
+            ShareLink(item: exportURL ?? FileManager.default.temporaryDirectory) {
+                HStack {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundStyle(Color.sage500)
+                    Text("Export All Data")
+                        .foregroundStyle(Color.ink900)
+                }
+            }
+        } else {
+            Button {
+                showPaywall = true
+            } label: {
+                HStack {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundStyle(Color.sage500)
+                    Text("Export All Data")
+                        .foregroundStyle(Color.ink900)
+                }
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var feedbackSection: some View {
+        Section("Feedback") {
+            let mailto = "mailto:\(supportEmail)?subject=InterviewReady%20Feedback%20(v\(appVersion))"
+            if let url = URL(string: mailto) {
+                Link(destination: url) {
+                    HStack {
+                        Image(systemName: "envelope.fill")
+                            .foregroundStyle(Color.sage500)
+                        Text("Send Feedback / Bug Report")
+                            .foregroundStyle(Color.ink900)
+                    }
+                }
+            } else {
+                // Fallback (should almost never happen)
+                HStack {
+                    Image(systemName: "envelope.fill")
+                        .foregroundStyle(Color.sage500)
+                    Text("Send Feedback / Bug Report")
+                        .foregroundStyle(Color.ink900)
+                    Spacer()
+                }
+            }
+        }
+    }
+
+    private var aboutSection: some View {
+        Section("About") {
+            HStack {
+                Text("Version")
+                Spacer()
+                Text(appVersion)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func prepareExportIfNeeded() {
+        guard purchaseManager.isPro else {
+            exportURL = nil
+            return
+        }
+        if exportURL == nil {
+            exportURL = DataExportManager.generateExportFile(context: modelContext)
+        }
+    }
+
     private func scheduleNotification() {
         let date = Date(timeIntervalSince1970: dailyReminderTime)
         NotificationManager.shared.scheduleDailyReminder(isEnabled: isDailyReminderEnabled, time: date)
     }
-    
+
     private func resetApp() {
         do {
             try modelContext.delete(model: Job.self)
@@ -133,3 +210,4 @@ struct SettingsView: View {
         }
     }
 }
+

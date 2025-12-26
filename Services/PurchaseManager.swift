@@ -1,6 +1,7 @@
 import Foundation
 import StoreKit
 import SwiftUI
+import Combine
 
 protocol EntitlementStoring {
     var isProUnlocked: Bool { get set }
@@ -26,19 +27,25 @@ final class PurchaseManager: ObservableObject {
 
     @Published private(set) var isPro: Bool
 
-    private let store: EntitlementStoring
+    private var store: EntitlementStoring
     private var updatesTask: Task<Void, Never>?
 
-    init(store: EntitlementStoring = UserDefaultsEntitlementStore()) {
-        self.store = store
-        self.isPro = store.isProUnlocked
+    init(store: EntitlementStoring? = nil) {
+        // Initialize all stored properties first
+        let resolvedStore = store ?? UserDefaultsEntitlementStore()
+        self.store = resolvedStore
+        self.isPro = resolvedStore.isProUnlocked
+        self.updatesTask = nil
 
-        updatesTask = Task {
-            await observeTransactions()
+        // Now it's safe to start tasks that capture self
+        self.updatesTask = Task { [weak self] in
+            guard let self else { return }
+            await self.observeTransactions()
         }
 
-        Task {
-            await refreshEntitlements()
+        Task { [weak self] in
+            guard let self else { return }
+            await self.refreshEntitlements()
         }
     }
 
@@ -79,7 +86,7 @@ final class PurchaseManager: ObservableObject {
 
     func refreshEntitlements() async {
         var hasEntitlement = false
-        for await result in Transaction.currentEntitlements {
+        for await result in StoreKit.Transaction.currentEntitlements {
             if let transaction = verifiedTransaction(from: result), transaction.productID == Self.productId {
                 hasEntitlement = true
                 break
@@ -102,7 +109,7 @@ final class PurchaseManager: ObservableObject {
     }
 
     private func observeTransactions() async {
-        for await result in Transaction.updates {
+        for await result in StoreKit.Transaction.updates {
             if let transaction = verifiedTransaction(from: result), transaction.productID == Self.productId {
                 await transaction.finish()
                 setProUnlocked(true)
@@ -110,7 +117,7 @@ final class PurchaseManager: ObservableObject {
         }
     }
 
-    private func verifiedTransaction(from result: VerificationResult<Transaction>) -> Transaction? {
+    private func verifiedTransaction(from result: StoreKit.VerificationResult<StoreKit.Transaction>) -> StoreKit.Transaction? {
         switch result {
         case .verified(let transaction):
             return transaction

@@ -37,7 +37,7 @@ struct StoryDetailView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Scan Notes") {
-                    ProGate(isPro: purchaseManager.isPro, isPaywallPresented: $showPaywall)
+                    ProGate(isPro: { purchaseManager.isPro }, isPaywallPresented: $showPaywall)
                         .requirePro {
                             showScanner = true
                         }
@@ -51,7 +51,7 @@ struct StoryDetailView: View {
                     ProgressView()
                     Text("Processing scan…")
                         .font(.caption)
-                        .foregroundStyle(.ink600)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(12)
                 .background(.ultraThinMaterial)
@@ -107,3 +107,4 @@ struct StoryDetailView: View {
         }
     }
 }
+

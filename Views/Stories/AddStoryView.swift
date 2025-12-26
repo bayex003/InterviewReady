@@ -75,10 +75,11 @@ struct AddStoryView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Scan Notes") {
-                        ProGate(isPro: purchaseManager.isPro, isPaywallPresented: $showPaywall)
-                            .requirePro {
-                                showScanner = true
-                            }
+                        if purchaseManager.isPro {
+                            showScanner = true
+                        } else {
+                            showPaywall = true
+                        }
                     }
                     .disabled(isProcessingScan)
                 }
@@ -89,7 +90,7 @@ struct AddStoryView: View {
                         ProgressView()
                         Text("Processing scan…")
                             .font(.caption)
-                            .foregroundStyle(.ink600)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(12)
                     .background(.ultraThinMaterial)
@@ -160,3 +161,4 @@ struct AddStoryView: View {
         }
     }
 }
+

@@ -2,79 +2,77 @@ import SwiftUI
 import SwiftData
 
 struct AddQuestionView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
-    @State private var questionText = ""
-    @State private var selectedCategory = "General"
-    @State private var tipText = ""
-    @State private var exampleAnswerText = ""
+    @State private var text: String = ""
+    @State private var category: String = "General"
+    @State private var tip: String = ""
+    @State private var exampleAnswer: String = ""
 
-    private let categories = ["General", "Basics", "Behavioral", "Technical", "Strengths", "Weaknesses"]
-
-    private var isSaveDisabled: Bool {
-        questionText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
+    // Keep categories flexible; you can edit this list anytime
+    private let categories = [
+        "General", "Basics", "Behavioral", "Technical",
+        "Leadership", "Conflict", "Challenge", "Success", "Failure"
+    ]
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Question") {
-                    TextEditor(text: $questionText)
+                    TextEditor(text: $text)
                         .frame(minHeight: 120)
-                        .scrollContentBackground(.hidden)
-                }
 
-                Section("Category") {
-                    Picker("Category", selection: $selectedCategory) {
-                        ForEach(categories, id: \.self) { category in
-                            Text(category).tag(category)
+                    Picker("Category", selection: $category) {
+                        ForEach(categories, id: \.self) { c in
+                            Text(c).tag(c)
                         }
                     }
                 }
 
-                Section("Tip") {
-                    TextEditor(text: $tipText)
-                        .frame(minHeight: 120)
-                        .scrollContentBackground(.hidden)
+                Section("Tip (optional)") {
+                    TextEditor(text: $tip)
+                        .frame(minHeight: 100)
                 }
 
-                Section("Example Answer") {
-                    TextEditor(text: $exampleAnswerText)
+                Section("Example answer (optional)") {
+                    TextEditor(text: $exampleAnswer)
                         .frame(minHeight: 140)
-                        .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle("Add Question")
+            .navigationTitle("New Question")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { saveQuestion() }
-                        .disabled(isSaveDisabled)
+                    Button("Save") { saveAndDismiss() }
+                        .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
-            .tapToDismissKeyboard()
         }
     }
 
-    private func saveQuestion() {
-        let trimmedQuestion = questionText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedQuestion.isEmpty else { return }
+    private func saveAndDismiss() {
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
 
-        let tip = tipText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let example = exampleAnswerText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedTip = tip.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedExample = exampleAnswer.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let question = Question(
-            text: trimmedQuestion,
-            category: selectedCategory,
+        let newQuestion = Question(
+            text: trimmedText,
+            category: category,
             isCustom: true,
-            tip: tip.isEmpty ? nil : tip,
-            exampleAnswer: example.isEmpty ? nil : example
+            tip: trimmedTip.isEmpty ? nil : trimmedTip,
+            exampleAnswer: trimmedExample.isEmpty ? nil : trimmedExample
         )
 
-        modelContext.insert(question)
+        // Optional: keep timestamps consistent (your init already sets them)
+        newQuestion.updatedAt = Date()
+
+        modelContext.insert(newQuestion)
         dismiss()
     }
 }

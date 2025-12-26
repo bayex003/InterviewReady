@@ -58,6 +58,7 @@
 		F62008552EEC9FFC00B94259 /* Exceptions for "Questions" folder in "InterviewReady" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				AddQuestionView.swift,
 				QuestionDetailView.swift,
 				QuestionRow.swift,
 				QuestionsListView.swift,

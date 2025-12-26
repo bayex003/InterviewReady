@@ -10,6 +10,11 @@ class DataExportManager {
             let jobs = try context.fetch(FetchDescriptor<Job>(sortBy: [SortDescriptor(\.dateApplied, order: .reverse)]))
             let stories = try context.fetch(FetchDescriptor<Story>())
             let questions = try context.fetch(FetchDescriptor<Question>(sortBy: [SortDescriptor(\.category)]))
+            let attempts = try context.fetch(
+                FetchDescriptor<PracticeAttempt>(
+                    sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+                )
+            )
             
             // 2. Build the "Report" String
             var report = """
@@ -92,6 +97,33 @@ class DataExportManager {
                     (Answered on: \(answeredOnString))
                     --------------------------------------------------
                     
+                    """
+                }
+            }
+            report += "\n"
+
+            // --- SECTION: PRACTICE ATTEMPTS ---
+            report += """
+            ### ⏱️ PRACTICE ATTEMPTS (\(attempts.count))
+
+            """
+
+            if attempts.isEmpty {
+                report += "(No attempts recorded yet)\n"
+            } else {
+                for attempt in attempts {
+                    let formattedDate = attempt.createdAt.formatted(date: .abbreviated, time: .shortened)
+                    report += """
+                    • \(formattedDate) — \(attempt.source)
+                      Q: \(attempt.questionTextSnapshot)
+
+                    """
+                    if let durationSeconds = attempt.durationSeconds {
+                        report += "  Duration: \(durationSeconds)s\n"
+                    }
+                    report += """
+                      --------------------------------------------------
+
                     """
                 }
             }

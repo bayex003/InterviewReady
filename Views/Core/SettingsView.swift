@@ -1,3 +1,7 @@
+// Manual test checklist:
+// - Pro: tap Export -> label changes to Generating... and button disabled -> share sheet appears
+// - Tap Export repeatedly quickly -> only one share sheet
+// - Force export failure (simulate generateExportFile returning nil) -> alert shows
 import SwiftUI
 import SwiftData
 
@@ -25,7 +29,8 @@ struct SettingsView: View {
     // Export
     @State private var showShareSheet = false
     @State private var shareItems: [Any] = []
-    @State private var showExportError = false
+    @State private var isGeneratingExport = false
+    @State private var showExportErrorAlert = false
 
     // MARK: - Bindings
 
@@ -59,7 +64,9 @@ struct SettingsView: View {
                 PaywallView()
                     .environmentObject(purchaseManager)
             }
-            .sheet(isPresented: $showShareSheet) {
+            .sheet(isPresented: $showShareSheet, onDismiss: {
+                shareItems = []
+            }) {
                 ShareSheet(items: shareItems)
             }
             .alert("Reset App Data?", isPresented: $showResetConfirmation) {
@@ -75,10 +82,10 @@ struct SettingsView: View {
             } message: {
                 Text("Your app has been reset to a clean state.")
             }
-            .alert("Export Failed", isPresented: $showExportError) {
+            .alert("Export failed", isPresented: $showExportErrorAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
-                Text("Unable to generate the export file. Please try again.")
+                Text("We couldn’t generate the export file. Please try again.")
             }
         }
     }
@@ -129,21 +136,17 @@ struct SettingsView: View {
     private var exportRow: some View {
         if purchaseManager.isPro {
             Button {
-                if let exportURL = DataExportManager.generateExportFile(context: modelContext) {
-                    shareItems = [exportURL]
-                    showShareSheet = true
-                } else {
-                    showExportError = true
-                }
+                exportAllDataTapped()
             } label: {
                 HStack {
                     Image(systemName: "square.and.arrow.up")
                         .foregroundStyle(Color.sage500)
-                    Text("Export All Data")
+                    Text(isGeneratingExport ? "Generating Export…" : "Export All Data")
                         .foregroundStyle(Color.ink900)
                 }
             }
             .buttonStyle(.plain)
+            .disabled(isGeneratingExport)
         } else {
             Button {
                 showPaywall = true
@@ -217,5 +220,20 @@ struct SettingsView: View {
         } catch {
             print("Failed to reset: \(error)")
         }
+    }
+
+    @MainActor
+    private func exportAllDataTapped() {
+        guard !isGeneratingExport else { return }
+        isGeneratingExport = true
+
+        if let exportURL = DataExportManager.generateExportFile(context: modelContext) {
+            shareItems = [exportURL]
+            showShareSheet = true
+        } else {
+            showExportErrorAlert = true
+        }
+
+        isGeneratingExport = false
     }
 }

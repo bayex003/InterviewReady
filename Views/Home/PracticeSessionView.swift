@@ -1,3 +1,10 @@
+// Testing Checklist:
+// - Manual: open question, type something, go back → attempt added
+// - Manual: open question, do nothing, go back → no attempt
+// - Drill: stop recording on a question → drill attempt added
+// - Attempt history: Pro user sees list; free user sees locked message + paywall opens
+// - App compiles and runs
+
 import SwiftUI
 import SwiftData
 
@@ -242,8 +249,21 @@ struct PracticeSessionView: View {
         audioService.stopRecording()
 
         markCurrentQuestionAsPracticed()
+        recordDrillAttempt()
 
         withAnimation { showFeedback = true }
+    }
+
+    private func recordDrillAttempt() {
+        guard let q = currentQuestion else { return }
+
+        let attempt = PracticeAttempt(
+            source: "drill",
+            questionTextSnapshot: q.text,
+            questionId: q.id
+        )
+        modelContext.insert(attempt)
+        try? modelContext.save()
     }
 
     private func markCurrentQuestionAsPracticed() {

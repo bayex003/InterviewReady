@@ -1,3 +1,10 @@
+// Testing Checklist:
+// - Manual: open question, type something, go back → attempt added
+// - Manual: open question, do nothing, go back → no attempt
+// - Drill: stop recording on a question → drill attempt added
+// - Attempt history: Pro user sees list; free user sees locked message + paywall opens
+// - App compiles and runs
+
 import SwiftUI
 import SwiftData
 
@@ -61,7 +68,7 @@ struct InterviewReadyApp: App {
     private func prepareApp() async {
         do {
             // Create the SwiftData container AFTER UI is already showing splash
-            let schema = Schema([Job.self, Question.self, Story.self])
+            let schema = Schema([Job.self, Question.self, Story.self, PracticeAttempt.self])
             let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
             let newContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
 

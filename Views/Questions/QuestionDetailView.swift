@@ -12,6 +12,7 @@ struct QuestionDetailView: View {
     @Bindable var question: Question
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var purchaseManager: PurchaseManager
 
     @Query(sort: \PracticeAttempt.createdAt, order: .reverse) private var allAttempts: [PracticeAttempt]
@@ -21,6 +22,43 @@ struct QuestionDetailView: View {
     @State private var showHistory = false
     @State private var showPaywall = false
     @State private var didEditThisSession = false
+    @State private var showDeleteConfirmation = false
+
+    private let categories = ["General", "Basics", "Behavioral", "Technical", "Strengths", "Weaknesses"]
+
+    private var canEditCustomQuestion: Bool {
+        question.isCustom && purchaseManager.isPro
+    }
+
+    private var questionTextBinding: Binding<String> {
+        Binding(
+            get: { question.text },
+            set: { newValue in
+                question.text = newValue
+                question.updatedAt = Date()
+            }
+        )
+    }
+
+    private var tipBinding: Binding<String> {
+        Binding(
+            get: { question.tip ?? "" },
+            set: { newValue in
+                question.tip = newValue
+                question.updatedAt = Date()
+            }
+        )
+    }
+
+    private var exampleAnswerBinding: Binding<String> {
+        Binding(
+            get: { question.exampleAnswer ?? "" },
+            set: { newValue in
+                question.exampleAnswer = newValue
+                question.updatedAt = Date()
+            }
+        )
+    }
 
     var body: some View {
         ScrollView {
@@ -32,19 +70,49 @@ struct QuestionDetailView: View {
                         Image(systemName: "bubble.left.and.bubble.right.fill")
                             .foregroundStyle(Color.sage500)
 
-                        Text(question.category.uppercased())
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundStyle(Color.sage500)
+                        if canEditCustomQuestion {
+                            Menu {
+                                ForEach(categories, id: \.self) { category in
+                                    Button(category) {
+                                        question.category = category
+                                        question.updatedAt = Date()
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text(question.category.uppercased())
+                                        .font(.caption)
+                                        .fontWeight(.bold)
+                                        .foregroundStyle(Color.sage500)
+                                    Image(systemName: "chevron.down")
+                                        .font(.caption2)
+                                        .foregroundStyle(Color.sage500)
+                                }
+                            }
+                        } else {
+                            Text(question.category.uppercased())
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundStyle(Color.sage500)
+                        }
 
                         Spacer()
                     }
 
-                    Text(question.text)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.ink900)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if canEditCustomQuestion {
+                        TextEditor(text: questionTextBinding)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(Color.ink900)
+                            .scrollContentBackground(.hidden)
+                            .frame(minHeight: 90)
+                    } else {
+                        Text(question.text)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(Color.ink900)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .padding(20)
                 .background(Color.surfaceWhite)
@@ -57,16 +125,24 @@ struct QuestionDetailView: View {
                     systemImage: "lightbulb",
                     isExpanded: $showTip
                 ) {
-                    let tipText = (question.tip ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                    if tipText.isEmpty {
-                        Text("No tip available yet.")
-                            .font(.body)
-                            .foregroundStyle(Color.ink600)
-                    } else {
-                        Text(tipText)
+                    if canEditCustomQuestion {
+                        TextEditor(text: tipBinding)
                             .font(.body)
                             .foregroundStyle(Color.ink900)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .scrollContentBackground(.hidden)
+                            .frame(minHeight: 120)
+                    } else {
+                        let tipText = (question.tip ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        if tipText.isEmpty {
+                            Text("No tip available yet.")
+                                .font(.body)
+                                .foregroundStyle(Color.ink600)
+                        } else {
+                            Text(tipText)
+                                .font(.body)
+                                .foregroundStyle(Color.ink900)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
 
@@ -76,16 +152,24 @@ struct QuestionDetailView: View {
                     systemImage: "doc.text",
                     isExpanded: $showExample
                 ) {
-                    let exampleText = (question.exampleAnswer ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                    if exampleText.isEmpty {
-                        Text("No example answer available yet.")
-                            .font(.body)
-                            .foregroundStyle(Color.ink600)
-                    } else {
-                        Text(exampleText)
+                    if canEditCustomQuestion {
+                        TextEditor(text: exampleAnswerBinding)
                             .font(.body)
                             .foregroundStyle(Color.ink900)
-                            .fixedSize(horizontal: false, vertical: true)
+                            .scrollContentBackground(.hidden)
+                            .frame(minHeight: 140)
+                    } else {
+                        let exampleText = (question.exampleAnswer ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        if exampleText.isEmpty {
+                            Text("No example answer available yet.")
+                                .font(.body)
+                                .foregroundStyle(Color.ink600)
+                        } else {
+                            Text(exampleText)
+                                .font(.body)
+                                .foregroundStyle(Color.ink900)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
 
@@ -173,6 +257,22 @@ struct QuestionDetailView: View {
                     }
                 }
 
+                if canEditCustomQuestion {
+                    Button(role: .destructive) {
+                        showDeleteConfirmation = true
+                    } label: {
+                        Text("Delete Question")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .overlay(
+                                Capsule()
+                                    .strokeBorder(Color.red.opacity(0.6), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 Spacer(minLength: 60)
             }
             .padding()
@@ -204,6 +304,20 @@ struct QuestionDetailView: View {
             PaywallView()
                 .environmentObject(purchaseManager)
         }
+        .alert("Delete this question?", isPresented: $showDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                deleteQuestion()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will remove your custom question permanently.")
+        }
+    }
+
+    private func deleteQuestion() {
+        modelContext.delete(question)
+        try? modelContext.save()
+        dismiss()
     }
 }
 

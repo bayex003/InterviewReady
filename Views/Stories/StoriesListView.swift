@@ -18,6 +18,12 @@ struct StoryBankView: View {
         !purchaseManager.isPro && stories.count >= freeStoryLimit
     }
 
+    private var filters: [StoryFilter] {
+        let tags = StoryStore(stories: stories).allTags
+        let tagFilters = tags.map { StoryFilter(title: $0, value: $0) }
+        return [.all] + tagFilters
+    }
+
     private var filteredStories: [Story] {
         let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return stories.filter { story in
@@ -79,6 +85,9 @@ struct StoryBankView: View {
                 router.presentAddMoment = false
             }
         }
+        .onChange(of: stories) { _, _ in
+            refreshSelectedFilter()
+        }
     }
 
     private var headerSection: some View {
@@ -125,7 +134,7 @@ struct StoryBankView: View {
     private var filterRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
-                ForEach(StoryFilter.allCases) { filter in
+                ForEach(filters) { filter in
                     Chip(
                         title: filter.title,
                         isSelected: filter == selectedFilter
@@ -208,34 +217,30 @@ struct StoryBankView: View {
             showAddStory = true
         }
     }
+
+    private func refreshSelectedFilter() {
+        guard !filters.contains(selectedFilter) else { return }
+        selectedFilter = .all
+    }
 }
 
 private struct StoryFilter: Identifiable, Hashable {
-    let id = UUID()
+    let id: String
     let title: String
     let value: String?
 
-    static let all = StoryFilter(title: "All Stories", value: nil)
-    static let behavioral = StoryFilter(title: "Behavioral", value: "Behavioral")
-    static let leadership = StoryFilter(title: "Leadership", value: "Leadership")
-    static let problemSolving = StoryFilter(title: "Problem Solving", value: "Problem Solving")
-    static let technical = StoryFilter(title: "Technical", value: "Technical")
+    static let all = StoryFilter(id: "all", title: "All", value: nil)
 
-    static let allCases: [StoryFilter] = [
-        .all,
-        .behavioral,
-        .leadership,
-        .problemSolving,
-        .technical
-    ]
+    init(title: String, value: String?) {
+        self.title = title
+        self.value = value
+        self.id = value?.lowercased() ?? "all"
+    }
 
     func matches(_ story: Story) -> Bool {
         guard let value else { return true }
         let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedValue.isEmpty { return true }
-        if story.category.localizedCaseInsensitiveContains(trimmedValue) {
-            return true
-        }
         return story.tags.contains(where: { $0.localizedCaseInsensitiveContains(trimmedValue) })
     }
 }

@@ -6,6 +6,8 @@ struct NewStoryView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var purchaseManager: PurchaseManager
 
+    @Query(sort: \Story.lastUpdated, order: .reverse) private var stories: [Story]
+
     let story: Story?
 
     @State private var title: String
@@ -19,8 +21,6 @@ struct NewStoryView: View {
 
     @State private var selectedJob: String?
 
-    @State private var customTags: [String]
-    @State private var showAddTagAlert = false
     @State private var newTagName = ""
 
     // Scan flow
@@ -35,8 +35,6 @@ struct NewStoryView: View {
     // Alerts (empty OCR, simulator message, errors)
     @State private var activeAlert: ScanAlert?
 
-    private let baseTags = ["Leadership", "Conflict", "Technical", "Behavioral", "Strategy", "Problem Solving"]
-
     init(story: Story? = nil) {
         self.story = story
         _title = State(initialValue: story?.title ?? "")
@@ -48,9 +46,6 @@ struct NewStoryView: View {
         _result = State(initialValue: story?.result ?? "")
         _notes = State(initialValue: story?.notes ?? "")
         _manualScanDraft = State(initialValue: "")
-
-        let extraTags = initialTags.filter { !baseTags.contains($0) }
-        _customTags = State(initialValue: extraTags)
     }
 
     enum ActiveSheet: Identifiable {
@@ -82,7 +77,9 @@ struct NewStoryView: View {
     }
 
     private var availableTags: [String] {
-        baseTags + customTags
+        let storeTags = StoryStore(stories: stories).allTags
+        let combined = storeTags + Array(selectedTags)
+        return StoryStore.sortedTags(combined)
     }
 
     var body: some View {
@@ -227,24 +224,44 @@ struct NewStoryView: View {
 
     private var tagsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("TAGS")
-                    .font(.caption)
-                    .foregroundStyle(Color.ink500)
+            Text("TAGS")
+                .font(.caption)
+                .foregroundStyle(Color.ink500)
 
-                Spacer()
-
-                Button {
-                    showAddTagAlert = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "plus")
-                        Text("Add Tag")
+            HStack(spacing: 8) {
+                TextField("Add tag", text: $newTagName)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.ink900)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        addNewTag()
                     }
-                    .font(.caption)
-                    .foregroundStyle(Color.sage500)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.surfaceWhite)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.ink200, lineWidth: 1)
+                    )
+
+                Button("Add") {
+                    addNewTag()
                 }
-                .buttonStyle(.plain)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.sage500)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.sage100.opacity(0.2))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.sage500.opacity(0.4), lineWidth: 1)
+                )
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -255,17 +272,6 @@ struct NewStoryView: View {
                         }
                     }
                 }
-            }
-        }
-        .alert("Add Tag", isPresented: $showAddTagAlert) {
-            TextField("Tag name", text: $newTagName)
-
-            Button("Cancel", role: .cancel) {
-                newTagName = ""
-            }
-
-            Button("Add") {
-                addCustomTag()
             }
         }
     }
@@ -408,14 +414,16 @@ struct NewStoryView: View {
         }
     }
 
-    private func addCustomTag() {
+    private func addNewTag() {
         let trimmed = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        guard !availableTags.contains(trimmed) else {
+
+        if let existing = availableTags.first(where: { $0.compare(trimmed, options: .caseInsensitive) == .orderedSame }) {
+            selectedTags.insert(existing)
             newTagName = ""
             return
         }
-        customTags.append(trimmed)
+
         selectedTags.insert(trimmed)
         newTagName = ""
     }
@@ -473,7 +481,7 @@ struct NewStoryView: View {
 
     private func saveStory() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let tagList = Array(selectedTags).sorted()
+        let tagList = StoryStore.sortedTags(Array(selectedTags))
         let resolvedCategory = tagList.first ?? (story?.category ?? "General")
 
         if let story {
@@ -563,12 +571,12 @@ private struct StarFieldEditor: View {
                             .stroke(Color.ink200, lineWidth: 1)
                     )
 
-                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if text.isEmpty {
                     Text(placeholder)
                         .font(.subheadline)
                         .foregroundStyle(Color.ink400)
                         .padding(.horizontal, 18)
-                        .padding(.vertical, 18)
+                        .padding(.vertical, 20)
                 }
             }
         }

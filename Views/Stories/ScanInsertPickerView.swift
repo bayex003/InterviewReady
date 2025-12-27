@@ -2,10 +2,13 @@ import SwiftUI
 
 struct ScanInsertPickerView: View {
     let scannedText: String
+    let availableFields: [Field]
     @Binding var situation: String
     @Binding var task: String
     @Binding var action: String
     @Binding var result: String
+    @Binding var notes: String
+    @Binding var manualDraft: String
 
     @Environment(\.dismiss) private var dismiss
 
@@ -15,11 +18,35 @@ struct ScanInsertPickerView: View {
     // Track what field we inserted into (so we can disable + show feedback)
     @State private var lastInsertedField: Field?
 
-    enum Field: String {
+    enum Field: String, CaseIterable, Identifiable {
         case situation = "Situation"
         case task = "Task"
         case action = "Action"
         case result = "Result"
+        case notes = "Notes"
+        case manualDraft = "Draft"
+
+        var id: String { rawValue }
+    }
+
+    init(
+        scannedText: String,
+        availableFields: [Field] = [.situation, .task, .action, .result],
+        situation: Binding<String>,
+        task: Binding<String>,
+        action: Binding<String>,
+        result: Binding<String>,
+        notes: Binding<String> = .constant(""),
+        manualDraft: Binding<String> = .constant("")
+    ) {
+        self.scannedText = scannedText
+        self.availableFields = availableFields
+        self._situation = situation
+        self._task = task
+        self._action = action
+        self._result = result
+        self._notes = notes
+        self._manualDraft = manualDraft
     }
 
     private var trimmedScannedText: String {
@@ -54,10 +81,9 @@ struct ScanInsertPickerView: View {
                 }
 
                 Section("Insert Into") {
-                    insertButton(.situation, binding: $situation)
-                    insertButton(.task, binding: $task)
-                    insertButton(.action, binding: $action)
-                    insertButton(.result, binding: $result)
+                    ForEach(availableFields) { field in
+                        insertButton(field)
+                    }
                 }
             }
             .navigationTitle("Insert Scanned Text")
@@ -71,16 +97,17 @@ struct ScanInsertPickerView: View {
 
     // MARK: - UI
 
-    private func insertButton(_ field: Field, binding: Binding<String>) -> some View {
+    private func insertButton(_ field: Field) -> some View {
         Button(field.rawValue) {
-            insertText(into: binding, field: field)
+            insertText(into: field)
         }
         .disabled(isScannedTextEmpty || isInserting || lastInsertedField == field)
     }
 
     // MARK: - Logic
 
-    private func insertText(into field: Binding<String>, field targetField: Field) {
+    private func insertText(into targetField: Field) {
+        guard let field = binding(for: targetField) else { return }
         guard !isScannedTextEmpty else { return }
         guard !isInserting else { return }
 
@@ -111,6 +138,23 @@ struct ScanInsertPickerView: View {
         lastInsertedField = targetField
     }
 
+    private func binding(for field: Field) -> Binding<String>? {
+        switch field {
+        case .situation:
+            return $situation
+        case .task:
+            return $task
+        case .action:
+            return $action
+        case .result:
+            return $result
+        case .notes:
+            return $notes
+        case .manualDraft:
+            return $manualDraft
+        }
+    }
+
     /// Collapses multiple spaces/newlines so OCR formatting differences don’t bypass duplicate detection.
     private func normalised(_ text: String) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -122,4 +166,3 @@ struct ScanInsertPickerView: View {
         return compact.lowercased()
     }
 }
-

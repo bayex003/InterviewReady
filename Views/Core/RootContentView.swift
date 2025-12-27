@@ -53,7 +53,7 @@ struct RootContentView: View {
                 .tag(AppTab.jobs)
 
                 NavigationStack {
-                    StoriesListView()
+                    StoryBankView()
                 }
                 .tag(AppTab.stories)
 

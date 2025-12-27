@@ -4,12 +4,14 @@ import SwiftData
 struct JobsListView: View {
     @EnvironmentObject private var jobsStore: JobsStore
     @EnvironmentObject private var router: AppRouter
+    @EnvironmentObject private var purchaseManager: PurchaseManager
 
     @State private var searchText = ""
     @State private var selectedFilter: JobStageFilter = .all
     @State private var showAddApplication = false
     @State private var linkSheet: JobSheetID?
     @State private var storiesSheet: JobSheetID?
+    @State private var showPaywall = false
 
     private var filteredJobs: [JobApplication] {
         let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -64,6 +66,10 @@ struct JobsListView: View {
         }
         .sheet(item: $storiesSheet) { sheet in
             LinkedStoriesSheetView(jobID: sheet.id)
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(purchaseManager)
         }
         .onChange(of: router.presentAddJob) { _, newValue in
             if newValue {
@@ -139,7 +145,7 @@ struct JobsListView: View {
                         storiesSheet = JobSheetID(id: job.id)
                     },
                     onLinkStory: {
-                        linkSheet = JobSheetID(id: job.id)
+                        handleLinkStory(for: job.id)
                     }
                 )
             }
@@ -179,6 +185,15 @@ struct JobsListView: View {
                 .stroke(style: StrokeStyle(lineWidth: 1, dash: [6]))
                 .foregroundStyle(Color.ink200)
         )
+    }
+
+    private func handleLinkStory(for jobID: UUID) {
+        guard purchaseManager.isPro else {
+            showPaywall = true
+            return
+        }
+
+        linkSheet = JobSheetID(id: jobID)
     }
 }
 
@@ -369,10 +384,12 @@ private struct LinkStorySheetView: View {
     let jobID: UUID
 
     @EnvironmentObject private var jobsStore: JobsStore
+    @EnvironmentObject private var purchaseManager: PurchaseManager
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \Story.lastUpdated, order: .reverse) private var stories: [Story]
 
     @State private var selectedStoryID: UUID?
+    @State private var showPaywall = false
 
     private var linkedStoryIDs: [UUID] {
         jobsStore.jobs.first(where: { $0.id == jobID })?.linkedStoryIDs ?? []
@@ -424,6 +441,10 @@ private struct LinkStorySheetView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Link") {
+                        guard purchaseManager.isPro else {
+                            showPaywall = true
+                            return
+                        }
                         guard let selectedStoryID else { return }
                         jobsStore.linkStory(jobID: jobID, storyID: selectedStoryID)
                         dismiss()
@@ -431,6 +452,10 @@ private struct LinkStorySheetView: View {
                     .disabled(selectedStoryID == nil)
                 }
             }
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(purchaseManager)
         }
     }
 }

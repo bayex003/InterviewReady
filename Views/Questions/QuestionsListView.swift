@@ -1,135 +1,392 @@
 import SwiftUI
-import SwiftData
 
 struct QuestionsListView: View {
-    // Keep SwiftData sort simple (stable + compiles)
-    @Query(sort: \Question.text, order: .forward) private var questions: [Question]
-
-    @EnvironmentObject private var purchaseManager: PurchaseManager
-
     @State private var searchText = ""
-    @State private var selectedCategory: String = "All"
-    @State private var selectedFilter: QuestionFilter = .all
+    @State private var selectedCategory: QuestionCategory = .all
+    @State private var isSelecting = false
+    @State private var selectedQuestionIDs: Set<UUID> = []
     @State private var showAddQuestion = false
-    @State private var showPaywall = false
+    @State private var showPracticeSession = false
 
-    let categories = ["All", "General", "Basics", "Behavioral", "Technical", "Strengths", "Weaknesses"]
+    private let questions = QuestionBankItem.sampleData
 
-    // Filter + then sort in-memory (unanswered first)
-    private func filteredAndSortedQuestions() -> [Question] {
-        let search = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let category = selectedCategory
-        let filter = selectedFilter
-
-        let filtered = questions.filter { q in
-            let matchesCategory = (category == "All") || (q.category == category)
-            let matchesFilter = (filter == .all) || q.isCustom
-            let matchesSearch = search.isEmpty || q.text.localizedCaseInsensitiveContains(search)
-            return matchesCategory && matchesFilter && matchesSearch
-        }
-
-        return filtered.sorted { lhs, rhs in
-            let lhsAnswered = lhs.isAnswered ? 1 : 0
-            let rhsAnswered = rhs.isAnswered ? 1 : 0
-
-            if lhsAnswered != rhsAnswered {
-                return lhsAnswered < rhsAnswered // unanswered first
-            }
-
-            return lhs.text.localizedCaseInsensitiveCompare(rhs.text) == .orderedAscending
+    private var filteredQuestions: [QuestionBankItem] {
+        let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return questions.filter { question in
+            let matchesCategory = selectedCategory == .all || question.category == selectedCategory
+            let matchesSearch = trimmedSearch.isEmpty
+                || question.text.localizedCaseInsensitiveContains(trimmedSearch)
+                || question.tags.contains(where: { $0.localizedCaseInsensitiveContains(trimmedSearch) })
+            return matchesCategory && matchesSearch
         }
     }
 
+    private var selectedQuestions: [QuestionBankItem] {
+        questions.filter { selectedQuestionIDs.contains($0.id) }
+    }
+
     var body: some View {
-        VStack(spacing: 0) {
-            Picker("Filter", selection: $selectedFilter) {
-                ForEach(QuestionFilter.allCases) { filter in
-                    Text(filter.rawValue).tag(filter)
+        ZStack(alignment: .bottomTrailing) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    titleRow
+
+                    searchRow
+
+                    categoryRow
+
+                    VStack(spacing: 16) {
+                        ForEach(filteredQuestions) { question in
+                            QuestionBankRow(
+                                question: question,
+                                isSelecting: isSelecting,
+                                isSelected: selectedQuestionIDs.contains(question.id),
+                                onToggleSelection: {
+                                    toggleSelection(for: question)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.bottom, isSelecting && !selectedQuestionIDs.isEmpty ? 80 : 16)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .safeAreaPadding(.bottom, 100)
+            }
+
+            FloatingAddButton {
+                showAddQuestion = true
+            }
+            .floatingAddButtonPosition()
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $showAddQuestion) {
+            AddQuestionPlaceholderView()
+        }
+        .navigationDestination(isPresented: $showPracticeSession) {
+            PracticeSessionPlaceholderView(questions: selectedQuestions)
+        }
+        .safeAreaInset(edge: .bottom) {
+            if isSelecting && !selectedQuestionIDs.isEmpty {
+                startSessionButton
+            }
+        }
+    }
+
+    private var titleRow: some View {
+        ZStack(alignment: .leading) {
+            SectionHeader(title: "", actionTitle: isSelecting ? "Done" : "Select") {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isSelecting.toggle()
+                    if !isSelecting {
+                        selectedQuestionIDs.removeAll()
+                    }
                 }
             }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-            .padding(.top, 12)
 
-            // Category Filter
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(categories, id: \.self) { cat in
-                        CategoryPill(category: cat, selectedCategory: selectedCategory) {
-                            selectedCategory = cat
+            HStack {
+                Text("Question Bank")
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(Color.ink900)
+                Spacer()
+            }
+        }
+    }
+
+    private var searchRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(Color.ink400)
+
+            TextField("Search questions or tags…", text: $searchText)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
+                .foregroundStyle(Color.ink900)
+
+            Image(systemName: "mic.fill")
+                .foregroundStyle(Color.ink400)
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 14)
+        .background(Color.surfaceWhite)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.ink200, lineWidth: 1)
+        )
+    }
+
+    private var categoryRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(QuestionCategory.allCases) { category in
+                    Chip(
+                        title: category.title,
+                        isSelected: selectedCategory == category,
+                        action: {
+                            selectedCategory = category
+                        }
+                    )
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private var startSessionButton: some View {
+        Button {
+            showPracticeSession = true
+        } label: {
+            Text("Start Session")
+                .font(.headline)
+                .foregroundStyle(Color.surfaceWhite)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.sage500)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 8)
+        .background(Color.cream50.ignoresSafeArea(edges: .bottom))
+    }
+
+    private func toggleSelection(for question: QuestionBankItem) {
+        if selectedQuestionIDs.contains(question.id) {
+            selectedQuestionIDs.remove(question.id)
+        } else {
+            selectedQuestionIDs.insert(question.id)
+        }
+    }
+}
+
+private struct QuestionBankRow: View {
+    let question: QuestionBankItem
+    let isSelecting: Bool
+    let isSelected: Bool
+    let onToggleSelection: () -> Void
+
+    var body: some View {
+        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18) {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack(alignment: .bottomTrailing) {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.sage100)
+                        .frame(width: 44, height: 44)
+                        .overlay(
+                            Image(systemName: question.iconName)
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(Color.sage500)
+                        )
+
+                    if question.isAnswered {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.sage500)
+                            .background(Circle().fill(Color.surfaceWhite))
+                            .offset(x: 6, y: 6)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(question.text)
+                        .font(.headline)
+                        .foregroundStyle(Color.ink900)
+                        .lineLimit(2)
+
+                    HStack(spacing: 8) {
+                        Chip(title: question.category.title, isSelected: true)
+
+                        if question.linkedStories > 0 {
+                            HStack(spacing: 4) {
+                                Image(systemName: "link")
+                                Text("\(question.linkedStories) \(question.linkedStories == 1 ? "Story" : "Stories") Linked")
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(Color.sage500)
+                        } else {
+                            Text("Unanswered")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.ink400)
                         }
                     }
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 12)
-            }
-            .background(Color.cream50)
 
-            // The List
-            List {
-                ForEach(filteredAndSortedQuestions()) { question in
-                    NavigationLink(destination: QuestionDetailView(question: question)) {
-                        QuestionRow(question: question)
+                Spacer()
+
+                if isSelecting {
+                    Button(action: onToggleSelection) {
+                        Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                            .font(.title3)
+                            .foregroundStyle(isSelected ? Color.sage500 : Color.ink300)
                     }
-                    .listRowBackground(Color.surfaceWhite)
+                    .buttonStyle(.plain)
                 }
             }
-            .listStyle(.plain)
-            .safeAreaPadding(.bottom, 90) // prevents last row being covered by floating tab bar
-            .background(Color.cream50)
-
-        }
-        .navigationTitle("Questions")
-        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-        .background(Color.cream50)
-        .toolbar {
-            Button {
-                if purchaseManager.isPro {
-                    showAddQuestion = true
-                } else {
-                    showPaywall = true
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if isSelecting {
+                    onToggleSelection()
                 }
-            } label: {
-                Image(systemName: "plus")
             }
-        }
-        .sheet(isPresented: $showAddQuestion) {
-            AddQuestionView()
-        }
-        .sheet(isPresented: $showPaywall) {
-            PaywallView()
-                .environmentObject(purchaseManager)
         }
     }
 }
 
-private enum QuestionFilter: String, CaseIterable, Identifiable {
+private enum QuestionCategory: String, CaseIterable, Identifiable {
     case all = "All"
-    case myQuestions = "My Questions"
+    case behavioral = "Behavioral"
+    case technical = "Technical"
+    case leadership = "Leadership"
 
     var id: String { rawValue }
+    var title: String { rawValue }
 }
 
-// Subview defined OUTSIDE the main struct
-struct CategoryPill: View {
-    let category: String
-    let selectedCategory: String
-    let action: () -> Void
+private struct QuestionBankItem: Identifiable {
+    let id: UUID
+    let text: String
+    let category: QuestionCategory
+    let linkedStories: Int
+    let isAnswered: Bool
+    let iconName: String
+    let tags: [String]
+
+    static let sampleData: [QuestionBankItem] = [
+        QuestionBankItem(
+            id: UUID(),
+            text: "Tell me about a time you failed and how you handled it.",
+            category: .behavioral,
+            linkedStories: 2,
+            isAnswered: true,
+            iconName: "message.fill",
+            tags: ["failure", "reflection"]
+        ),
+        QuestionBankItem(
+            id: UUID(),
+            text: "Explain the concept of Dependency Injection.",
+            category: .technical,
+            linkedStories: 0,
+            isAnswered: false,
+            iconName: "terminal",
+            tags: ["architecture", "patterns"]
+        ),
+        QuestionBankItem(
+            id: UUID(),
+            text: "Where do you see yourself in 5 years?",
+            category: .leadership,
+            linkedStories: 1,
+            isAnswered: true,
+            iconName: "star.fill",
+            tags: ["career", "vision"]
+        ),
+        QuestionBankItem(
+            id: UUID(),
+            text: "Tell me about a time you had to work with a difficult teammate.",
+            category: .behavioral,
+            linkedStories: 0,
+            isAnswered: false,
+            iconName: "person.3.fill",
+            tags: ["teamwork", "conflict"]
+        ),
+        QuestionBankItem(
+            id: UUID(),
+            text: "What is the difference between a process and a thread?",
+            category: .technical,
+            linkedStories: 0,
+            isAnswered: false,
+            iconName: "chevron.left.slash.chevron.right",
+            tags: ["os", "fundamentals"]
+        ),
+        QuestionBankItem(
+            id: UUID(),
+            text: "Describe a time you had to influence without authority.",
+            category: .leadership,
+            linkedStories: 3,
+            isAnswered: true,
+            iconName: "sparkles",
+            tags: ["influence", "leadership"]
+        ),
+        QuestionBankItem(
+            id: UUID(),
+            text: "How do you prioritize when everything feels urgent?",
+            category: .leadership,
+            linkedStories: 1,
+            isAnswered: true,
+            iconName: "flag.fill",
+            tags: ["prioritization", "planning"]
+        ),
+        QuestionBankItem(
+            id: UUID(),
+            text: "Walk me through your approach to debugging a production issue.",
+            category: .technical,
+            linkedStories: 2,
+            isAnswered: true,
+            iconName: "wrench.and.screwdriver.fill",
+            tags: ["debugging", "production"]
+        ),
+        QuestionBankItem(
+            id: UUID(),
+            text: "Tell me about a project you are most proud of.",
+            category: .behavioral,
+            linkedStories: 1,
+            isAnswered: true,
+            iconName: "hand.thumbsup.fill",
+            tags: ["impact", "delivery"]
+        ),
+        QuestionBankItem(
+            id: UUID(),
+            text: "How would you explain a complex technical concept to a non-technical stakeholder?",
+            category: .leadership,
+            linkedStories: 0,
+            isAnswered: false,
+            iconName: "bubble.left.and.bubble.right.fill",
+            tags: ["communication", "stakeholders"]
+        )
+    ]
+}
+
+private struct AddQuestionPlaceholderView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "plus.circle.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(Color.sage500)
+
+            Text("Add Question")
+                .font(.title2.bold())
+                .foregroundStyle(Color.ink900)
+
+            Text("Question creation is coming soon.")
+                .font(.subheadline)
+                .foregroundStyle(Color.ink500)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.cream50)
+    }
+}
+
+private struct PracticeSessionPlaceholderView: View {
+    let questions: [QuestionBankItem]
 
     var body: some View {
-        Button(action: action) {
-            Text(category)
+        VStack(spacing: 16) {
+            Image(systemName: "timer")
+                .font(.system(size: 48))
+                .foregroundStyle(Color.sage500)
+
+            Text("Practice Session")
+                .font(.title2.bold())
+                .foregroundStyle(Color.ink900)
+
+            Text("Session support is coming soon. Selected \(questions.count) questions.")
                 .font(.subheadline)
-                .fontWeight(.medium)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 16)
-                .background(selectedCategory == category ? Color.sage500 : Color.surfaceWhite)
-                .foregroundColor(selectedCategory == category ? .white : Color.ink600)
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .strokeBorder(Color.ink200, lineWidth: selectedCategory == category ? 0 : 1)
-                )
+                .foregroundStyle(Color.ink500)
+                .multilineTextAlignment(.center)
         }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.cream50)
     }
 }

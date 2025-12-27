@@ -40,60 +40,58 @@ struct JobsListView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.cream50.ignoresSafeArea()
+        ZStack {
+            Color.cream50.ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    Picker("Filter", selection: $filterSelection) {
-                        Text("Active").tag(0)
-                        Text("Archived").tag(1)
-                    }
-                    .pickerStyle(.segmented)
-                    .padding()
-                    .background(Color.cream50)
+            VStack(spacing: 0) {
+                Picker("Filter", selection: $filterSelection) {
+                    Text("Active").tag(0)
+                    Text("Archived").tag(1)
+                }
+                .pickerStyle(.segmented)
+                .padding()
+                .background(Color.cream50)
 
-                    if filteredJobs.isEmpty {
-                        ContentUnavailableView(
-                            filterSelection == 0 ? "No Active Jobs" : "No Archived Jobs",
-                            systemImage: filterSelection == 0 ? "briefcase" : "archivebox"
-                        )
-                        Spacer()
-                    } else {
-                        List {
-                            ForEach(filteredJobs) { job in
-                                NavigationLink(destination: EditJobView(job: job)) {
-                                    JobRow(job: job)
-                                }
-                                .listRowBackground(Color.surfaceWhite)
+                if filteredJobs.isEmpty {
+                    ContentUnavailableView(
+                        filterSelection == 0 ? "No Active Jobs" : "No Archived Jobs",
+                        systemImage: filterSelection == 0 ? "briefcase" : "archivebox"
+                    )
+                    Spacer()
+                } else {
+                    List {
+                        ForEach(filteredJobs) { job in
+                            NavigationLink(destination: EditJobView(job: job)) {
+                                JobRow(job: job)
                             }
-                            .onDelete(perform: deleteJob)
+                            .listRowBackground(Color.surfaceWhite)
                         }
-                        .listStyle(.plain)
+                        .onDelete(perform: deleteJob)
                     }
+                    .listStyle(.plain)
                 }
             }
-            .navigationTitle("My Jobs")
-            .searchable(text: $searchText)
-            .toolbar {
-                Button {
-                    handleAddTapped()
-                } label: {
-                    Image(systemName: "plus")
-                }
+        }
+        .navigationTitle("My Jobs")
+        .searchable(text: $searchText)
+        .toolbar {
+            Button {
+                handleAddTapped()
+            } label: {
+                Image(systemName: "plus")
             }
-            .sheet(isPresented: $showAddJob) {
-                AddJobView()
-            }
-            .sheet(isPresented: $showPaywall) {
-                PaywallView()
-                    .environmentObject(purchaseManager)
-            }
-            .onChange(of: router.presentAddJob) { _, newValue in
-                if newValue {
-                    handleAddTapped()
-                    router.presentAddJob = false
-                }
+        }
+        .sheet(isPresented: $showAddJob) {
+            AddJobView()
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(purchaseManager)
+        }
+        .onChange(of: router.presentAddJob) { _, newValue in
+            if newValue {
+                handleAddTapped()
+                router.presentAddJob = false
             }
         }
     }
@@ -137,4 +135,3 @@ struct JobRow: View {
         .padding().background(Color.surfaceWhite).cornerRadius(16)
     }
 }
-

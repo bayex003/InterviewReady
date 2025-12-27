@@ -4,11 +4,12 @@ import SwiftData
 struct HomeView: View {
     @Binding var selectedTab: AppTab
 
+    @EnvironmentObject private var jobsStore: JobsStore
+
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("hasCompletedNamePrompt_v1") private var hasCompletedNamePrompt: Bool = false
     @State private var showNameAlert = false
 
-    @Query(sort: \Job.dateApplied, order: .reverse) private var allJobs: [Job]
     @Query private var allStories: [Story]
     @Query(filter: #Predicate<Question> { $0.isAnswered == true }) private var answeredQuestions: [Question]
 
@@ -106,7 +107,7 @@ struct HomeView: View {
         HStack(spacing: 12) {
             HomeStatCard(
                 title: statCards[0].title,
-                value: "\(allJobs.count)",
+                value: "\(jobsStore.jobs.count)",
                 icon: statCards[0].icon
             )
 
@@ -203,14 +204,11 @@ struct HomeView: View {
             }
         }
         .buttonStyle(.plain)
-        .accessibilityHint("Opens Stories tab")
     }
 
     private var recentApplicationsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "Recent Applications", actionTitle: "View All") {
-                selectedTab = .jobs
-            }
+            SectionHeader(title: "Recent Applications")
 
             VStack(spacing: 12) {
                 ForEach(recentApplications) { application in
@@ -218,20 +216,15 @@ struct HomeView: View {
                         selectedTab = .jobs
                     } label: {
                         CardContainer(showShadow: false) {
-                            HStack(alignment: .top, spacing: 12) {
+                            HStack(spacing: 12) {
                                 ZStack {
-                                    Circle()
-                                        .fill(Color.surfaceWhite)
-                                        .frame(width: 48, height: 48)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.ink200, lineWidth: 1)
-                                        )
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.sage100)
+                                        .frame(width: 44, height: 44)
 
                                     Text(application.initials)
-                                        .font(.caption)
-                                        .fontWeight(.bold)
-                                        .foregroundStyle(Color.ink900)
+                                        .font(.headline)
+                                        .foregroundStyle(Color.sage500)
                                 }
 
                                 VStack(alignment: .leading, spacing: 4) {
@@ -278,15 +271,15 @@ struct HomeView: View {
     }
 
     private var recentApplications: [RecentApplication] {
-        if allJobs.isEmpty {
+        if jobsStore.jobs.isEmpty {
             return RecentApplication.placeholder
         }
 
-        return allJobs.prefix(3).map { job in
+        return jobsStore.jobs.prefix(3).map { job in
             RecentApplication(
                 role: job.roleTitle,
                 company: job.companyName,
-                location: job.location ?? "Remote",
+                location: job.locationDetail ?? job.locationType.rawValue,
                 status: job.stage.rawValue
             )
         }

@@ -64,7 +64,7 @@ struct QuestionsListView: View {
             AddQuestionPlaceholderView()
         }
         .navigationDestination(isPresented: $showPracticeSession) {
-            PracticeSessionPlaceholderView(questions: selectedQuestions)
+            PracticeSessionView(questions: selectedQuestions)
         }
         .safeAreaInset(edge: .bottom) {
             if isSelecting && !selectedQuestionIDs.isEmpty {
@@ -233,7 +233,7 @@ private struct QuestionBankRow: View {
     }
 }
 
-private enum QuestionCategory: String, CaseIterable, Identifiable {
+enum QuestionCategory: String, CaseIterable, Identifiable {
     case all = "All"
     case behavioral = "Behavioral"
     case technical = "Technical"
@@ -243,7 +243,7 @@ private enum QuestionCategory: String, CaseIterable, Identifiable {
     var title: String { rawValue }
 }
 
-private struct QuestionBankItem: Identifiable {
+struct QuestionBankItem: Identifiable {
     let id: UUID
     let text: String
     let category: QuestionCategory
@@ -360,30 +360,6 @@ private struct AddQuestionPlaceholderView: View {
             Text("Question creation is coming soon.")
                 .font(.subheadline)
                 .foregroundStyle(Color.ink500)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.cream50)
-    }
-}
-
-private struct PracticeSessionPlaceholderView: View {
-    let questions: [QuestionBankItem]
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "timer")
-                .font(.system(size: 48))
-                .foregroundStyle(Color.sage500)
-
-            Text("Practice Session")
-                .font(.title2.bold())
-                .foregroundStyle(Color.ink900)
-
-            Text("Session support is coming soon. Selected \(questions.count) questions.")
-                .font(.subheadline)
-                .foregroundStyle(Color.ink500)
-                .multilineTextAlignment(.center)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)

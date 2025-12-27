@@ -62,10 +62,11 @@ class DataExportManager {
                     ]
 
                     let rows = stories.map { story in
-                        [
+                        let normalizedTags = StoryStore.sortedTags(story.tags)
+                        return [
                             story.id.uuidString,
                             story.title,
-                            story.tags.joined(separator: ", "),
+                            normalizedTags.joined(separator: ", "),
                             story.situation,
                             story.task,
                             story.action,
@@ -290,9 +291,10 @@ class DataExportManager {
         }
 
         for (index, story) in stories.enumerated() {
+            let normalizedTags = StoryStore.sortedTags(story.tags)
             output.append("\(index + 1))")
             output.append("Title: \(story.title)")
-            output.append("Tags: \(story.tags.joined(separator: ", "))")
+            output.append("Tags: \(normalizedTags.joined(separator: ", "))")
             output.append("Situation: \(story.situation)")
             output.append("Task: \(story.task)")
             output.append("Action: \(story.action)")

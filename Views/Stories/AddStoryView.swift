@@ -481,7 +481,8 @@ struct NewStoryView: View {
 
     private func saveStory() {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let tagList = StoryStore.sortedTags(Array(selectedTags))
+        let normalizedTags = StoryStore.normalizeTags(Array(selectedTags))
+        let tagList = StoryStore.sortedTags(normalizedTags)
         let resolvedCategory = tagList.first ?? (story?.category ?? "General")
 
         if let story {

@@ -34,8 +34,9 @@ struct StoryBankView: View {
                 return true
             }
 
+            let normalizedTags = StoryStore.normalizeTags(story.tags)
             let matchesTitle = story.title.localizedCaseInsensitiveContains(trimmedSearch)
-            let matchesTags = story.tags.contains(where: { $0.localizedCaseInsensitiveContains(trimmedSearch) })
+            let matchesTags = normalizedTags.contains(where: { $0.localizedCaseInsensitiveContains(trimmedSearch) })
             let matchesCategory = story.category.localizedCaseInsensitiveContains(trimmedSearch)
             let matchesNotes = story.notes.localizedCaseInsensitiveContains(trimmedSearch)
 
@@ -241,7 +242,8 @@ private struct StoryFilter: Identifiable, Hashable {
         guard let value else { return true }
         let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedValue.isEmpty { return true }
-        return story.tags.contains(where: { $0.localizedCaseInsensitiveContains(trimmedValue) })
+        let normalizedTags = StoryStore.normalizeTags(story.tags)
+        return normalizedTags.contains(where: { $0.localizedCaseInsensitiveContains(trimmedValue) })
     }
 }
 
@@ -253,7 +255,8 @@ private struct StoryCardView: View {
     }
 
     private var displayTags: [String] {
-        let tags = story.tags.isEmpty ? [story.category] : story.tags
+        let normalizedTags = StoryStore.sortedTags(story.tags)
+        let tags = normalizedTags.isEmpty ? [story.category] : normalizedTags
         return Array(tags.prefix(2))
     }
 

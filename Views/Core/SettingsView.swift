@@ -1,7 +1,3 @@
-// Manual test checklist:
-// - Pro: tap Export -> label changes to Generating... and button disabled -> share sheet appears
-// - Tap Export repeatedly quickly -> only one share sheet
-// - Force export failure (simulate generateExportFile returning nil) -> alert shows
 import SwiftUI
 import SwiftData
 
@@ -10,10 +6,15 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var purchaseManager: PurchaseManager
     @EnvironmentObject private var dataController: AppDataController
+    @EnvironmentObject private var jobsStore: JobsStore
+
+    // Preferences
+    @AppStorage("isHapticFeedbackEnabled") private var isHapticFeedbackEnabled = true
+    @AppStorage("isSystemThemeMatchEnabled") private var isSystemThemeMatchEnabled = true
 
     // Notification State
     @AppStorage("isDailyReminderEnabled") private var isDailyReminderEnabled = false
-    @AppStorage("dailyReminderTime") private var dailyReminderTime: Double = 32400 // Default 9:00 AM
+    @AppStorage("dailyReminderTime") private var dailyReminderTime: Double = 32400 // 9:00 AM
 
     // Feedback configuration
     private let supportEmail = "support@example.com"
@@ -26,18 +27,14 @@ struct SettingsView: View {
     // Paywall
     @State private var showPaywall = false
 
-    // Restore Purchases
-    @State private var isRestoring = false
-    @State private var restoreMessage: String?
-    @State private var showRestoreAlert = false
-    @State private var restoreAlertTitle = ""
-    @State private var isRefreshingProStatus = false
-
     // Export
+    @State private var showExportOptions = false
     @State private var showShareSheet = false
     @State private var shareItems: [Any] = []
     @State private var isGeneratingExport = false
     @State private var showExportErrorAlert = false
+    @State private var exportSelection = ExportSelection()
+    @State private var exportFormat: ExportFormat = .csv
 
     // MARK: - Bindings
 
@@ -55,14 +52,25 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                proSection
-                remindersSection
-                dataManagementSection
-                feedbackSection
-                aboutSection
+            ZStack {
+                Color.cream50.ignoresSafeArea()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        headerSection
+                        proSection
+                        preferencesSection
+                        remindersSection
+                        dataManagementSection
+                        supportSection
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 120)
+                }
             }
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
@@ -72,20 +80,28 @@ struct SettingsView: View {
                 PaywallView()
                     .environmentObject(purchaseManager)
             }
+            .sheet(isPresented: $showExportOptions) {
+                ExportOptionsSheet(
+                    selection: $exportSelection,
+                    format: $exportFormat,
+                    isGenerating: isGeneratingExport,
+                    onExport: exportSelectedData
+                )
+            }
             .sheet(isPresented: $showShareSheet, onDismiss: {
                 shareItems = []
             }) {
                 ShareSheet(items: shareItems)
             }
-            .alert("Reset App Data?", isPresented: $showResetConfirmation) {
+            .alert("Clear all data?", isPresented: $showResetConfirmation) {
                 Button("Cancel", role: .cancel) { }
                 Button("Delete Everything", role: .destructive) {
                     resetApp()
                 }
             } message: {
-                Text("This will permanently delete all your Jobs and Stories. This action cannot be undone.")
+                Text("This will permanently delete your jobs, stories, questions, and practice attempts. This action cannot be undone.")
             }
-            .alert("Data Reset", isPresented: $showResetSuccess) {
+            .alert("Data Cleared", isPresented: $showResetSuccess) {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text("Your app has been reset to a clean state.")
@@ -93,186 +109,193 @@ struct SettingsView: View {
             .alert("Export failed", isPresented: $showExportErrorAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
-                Text("We couldn’t generate the export file. Please try again.")
+                Text("We couldn’t generate the export files. Please try again.")
             }
-            .alert(restoreAlertTitle, isPresented: $showRestoreAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                if let restoreMessage {
-                    Text(restoreMessage)
+        }
+    }
+
+    // MARK: - Sections
+
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Settings")
+                .font(.largeTitle.bold())
+                .foregroundStyle(Color.ink900)
+
+            Text("Manage your experience, reminders, and data.")
+                .font(.subheadline)
+                .foregroundStyle(Color.ink600)
+        }
+    }
+
+    private var proSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: "Pro")
+
+            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        HStack(spacing: 8) {
+                            Image(systemName: "sparkles")
+                                .foregroundStyle(Color.sage500)
+                            Text(purchaseManager.isPro ? "InterviewReady Pro" : "Unlock Pro Features")
+                                .font(.headline)
+                                .foregroundStyle(Color.ink900)
+                        }
+
+                        Spacer()
+
+                        Chip(title: purchaseManager.isPro ? "Active" : "Pro", isSelected: true)
+                    }
+
+                    Text("Get unlimited practice questions, AI feedback, and export your career stories.")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ink600)
+
+                    PrimaryCTAButton(title: purchaseManager.isPro ? "Manage Subscription" : "Upgrade to Pro", systemImage: "chevron.right") {
+                        if purchaseManager.isPro {
+                            refreshProStatus()
+                        } else {
+                            showPaywall = true
+                        }
+                    }
                 }
             }
         }
     }
 
-    // MARK: - Sections (split up for compiler)
+    private var preferencesSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: "App Preferences")
 
-    private var proSection: some View {
-        Section {
-            if purchaseManager.isPro {
-                HStack {
-                    Text("InterviewReady Pro")
-                    Spacer()
-                    Text("Active")
-                        .foregroundStyle(.secondary)
-                }
-            } else {
-                Button {
-                    showPaywall = true
-                } label: {
-                    HStack {
-                        Text("Upgrade to Pro")
-                        Spacer()
+            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+                VStack(spacing: 12) {
+                    SettingsRow(icon: "wave.3.right", title: "Haptic Feedback") {
+                        Toggle("Haptic Feedback", isOn: $isHapticFeedbackEnabled)
+                            .labelsHidden()
+                            .tint(Color.sage500)
+                    }
+
+                    Divider().opacity(0.6)
+
+                    SettingsRow(icon: "circle.lefthalf.filled", title: "System Theme Match") {
+                        Toggle("System Theme Match", isOn: $isSystemThemeMatchEnabled)
+                            .labelsHidden()
+                            .tint(Color.sage500)
                     }
                 }
-
-                Button {
-                    restorePurchases()
-                } label: {
-                    HStack {
-                        Text("Restore Purchases")
-                        Spacer()
-                    }
-                }
-                .disabled(isRestoring)
-            }
-
-            Button {
-                refreshProStatus()
-            } label: {
-                HStack {
-                    Text("Refresh Pro Status")
-                    Spacer()
-                }
-            }
-            .disabled(isRefreshingProStatus)
-        } header: {
-            Text("Pro")
-        } footer: {
-            if isRestoring {
-                Text("Restoring…")
             }
         }
     }
 
     private var remindersSection: some View {
-        Section("Reminders") {
-            Toggle("Daily Practice Reminder", isOn: $isDailyReminderEnabled)
-                .tint(Color.sage500)
-                .onChange(of: isDailyReminderEnabled) { _, newValue in
-                    if newValue {
-                        NotificationManager.shared.requestPermission { granted in
-                            if !granted { isDailyReminderEnabled = false }
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: "Reminders")
+
+            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+                VStack(spacing: 12) {
+                    SettingsRow(icon: "bell", title: "Daily Practice") {
+                        Toggle("Daily Practice", isOn: $isDailyReminderEnabled)
+                            .labelsHidden()
+                            .tint(Color.sage500)
+                            .onChange(of: isDailyReminderEnabled) { _, newValue in
+                                if newValue {
+                                    NotificationManager.shared.requestPermission { granted in
+                                        if !granted { isDailyReminderEnabled = false }
+                                    }
+                                }
+                                scheduleNotification()
+                            }
+                    }
+
+                    if isDailyReminderEnabled {
+                        Divider().opacity(0.6)
+
+                        SettingsRow(icon: "clock", title: "Reminder Time") {
+                            DatePicker("Time", selection: reminderTimeBinding, displayedComponents: .hourAndMinute)
+                                .labelsHidden()
                         }
                     }
-                    scheduleNotification()
                 }
-
-            if isDailyReminderEnabled {
-                DatePicker("Time", selection: reminderTimeBinding, displayedComponents: .hourAndMinute)
             }
         }
     }
 
     private var dataManagementSection: some View {
-        Section {
-            exportRow
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: "Data Management")
 
-            Button(role: .destructive) {
-                showResetConfirmation = true
-            } label: {
-                HStack {
-                    Image(systemName: "trash")
-                    Text("Reset All Data")
+            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+                VStack(spacing: 12) {
+                    Button {
+                        showExportOptions = true
+                    } label: {
+                        SettingsRow(icon: "square.and.arrow.up", title: "Export My Data") {
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(Color.ink400)
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    Divider().opacity(0.6)
+
+                    Button(role: .destructive) {
+                        showResetConfirmation = true
+                    } label: {
+                        SettingsRow(icon: "trash", title: "Clear All Data", titleColor: .red) {
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(Color.ink400)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-        } header: {
-            Text("Data Management")
-        } footer: {
-            if !purchaseManager.isPro {
-                Text("Export is a Pro feature.")
-            }
+
+            Text("Your data is stored locally on this device. Exporting creates CSV or raw text files for sharing.")
+                .font(.footnote)
+                .foregroundStyle(Color.ink500)
         }
     }
 
-    @ViewBuilder
-    private var exportRow: some View {
-        if purchaseManager.isPro {
-            Button {
-                exportAllDataTapped()
-            } label: {
-                HStack {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(Color.sage500)
-                    Text(isGeneratingExport ? "Generating Export…" : "Export All Data")
-                        .foregroundStyle(Color.ink900)
-                }
-            }
-            .buttonStyle(.plain)
-            .disabled(isGeneratingExport)
-        } else {
-            Button {
-                showPaywall = true
-            } label: {
-                HStack {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundStyle(Color.sage500)
-                    Text("Export All Data")
-                        .foregroundStyle(Color.ink900)
-                }
-            }
-            .buttonStyle(.plain)
-        }
-    }
+    private var supportSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(title: "Support & About")
 
-    private var feedbackSection: some View {
-        Section("Feedback") {
-            let mailto = "mailto:\(supportEmail)?subject=InterviewReady%20Feedback%20(v\(appVersion))"
-            if let url = URL(string: mailto) {
-                Link(destination: url) {
-                    HStack {
-                        Image(systemName: "envelope.fill")
-                            .foregroundStyle(Color.sage500)
-                        Text("Send Feedback / Bug Report")
-                            .foregroundStyle(Color.ink900)
+            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+                VStack(spacing: 12) {
+                    if let url = supportMailURL {
+                        Link(destination: url) {
+                            SettingsRow(icon: "envelope", title: "Send Feedback") {
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(Color.ink400)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    Divider().opacity(0.6)
+
+                    SettingsRow(icon: "info.circle", title: "App Version") {
+                        Text(appVersion)
+                            .font(.subheadline)
+                            .foregroundStyle(Color.ink500)
+                    }
+
+                    Divider().opacity(0.6)
+
+                    SettingsRow(icon: "icloud", title: "iCloud Sync") {
+                        Text(purchaseManager.isPro && dataController.isUsingCloud ? "On" : "Off")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.ink500)
                     }
                 }
-            } else {
-                // Fallback (should almost never happen)
-                HStack {
-                    Image(systemName: "envelope.fill")
-                        .foregroundStyle(Color.sage500)
-                    Text("Send Feedback / Bug Report")
-                        .foregroundStyle(Color.ink900)
-                    Spacer()
-                }
             }
         }
     }
 
-    private var aboutSection: some View {
-        Section {
-            HStack {
-                Text("Version")
-                Spacer()
-                Text(appVersion)
-                    .foregroundStyle(.secondary)
-            }
-            HStack {
-                Text("iCloud Sync")
-                Spacer()
-                Text(purchaseManager.isPro && dataController.isUsingCloud ? "On" : "Off")
-                    .foregroundStyle(.secondary)
-            }
-        } header: {
-            Text("About")
-        } footer: {
-            if !purchaseManager.isPro {
-                Text("Requires InterviewReady Pro.")
-            } else if !dataController.isUsingCloud {
-                Text("Sign into iCloud and enable iCloud Drive to sync.")
-            }
-        }
+    private var supportMailURL: URL? {
+        let mailto = "mailto:\(supportEmail)?subject=InterviewReady%20Feedback%20(v\(appVersion))"
+        return URL(string: mailto)
     }
 
     // MARK: - Helpers
@@ -286,7 +309,10 @@ struct SettingsView: View {
         do {
             try modelContext.delete(model: Job.self)
             try modelContext.delete(model: Story.self)
+            try modelContext.delete(model: Question.self)
+            try modelContext.delete(model: PracticeAttempt.self)
             try modelContext.save()
+            jobsStore.removeAll()
             showResetSuccess = true
         } catch {
             print("Failed to reset: \(error)")
@@ -294,13 +320,29 @@ struct SettingsView: View {
     }
 
     @MainActor
-    private func exportAllDataTapped() {
+    private func exportSelectedData() {
         guard !isGeneratingExport else { return }
+        guard exportSelection.hasSelection else {
+            showExportErrorAlert = true
+            return
+        }
+
         isGeneratingExport = true
 
-        if let exportURL = DataExportManager.generateExportFile(context: modelContext) {
-            shareItems = [exportURL]
-            showShareSheet = true
+        if let exportURLs = DataExportManager.generateExportFiles(
+            context: modelContext,
+            jobs: jobsStore.jobs,
+            includeStories: exportSelection.includeStories,
+            includeAttempts: exportSelection.includeAttempts,
+            includeJobs: exportSelection.includeJobs,
+            includeQuestions: exportSelection.includeQuestions,
+            format: exportFormat
+        ) {
+            shareItems = exportURLs
+            showExportOptions = false
+            DispatchQueue.main.async {
+                showShareSheet = true
+            }
         } else {
             showExportErrorAlert = true
         }
@@ -308,37 +350,124 @@ struct SettingsView: View {
         isGeneratingExport = false
     }
 
-    private func restorePurchases() {
-        guard !isRestoring else { return }
-        isRestoring = true
-
+    private func refreshProStatus() {
         Task {
-            await purchaseManager.restore()
             await purchaseManager.refreshEntitlements()
-
-            await MainActor.run {
-                isRestoring = false
-                if purchaseManager.isPro {
-                    restoreAlertTitle = "Restored"
-                    restoreMessage = "Pro unlocked."
-                } else {
-                    restoreAlertTitle = "No purchases found"
-                    restoreMessage = "We couldn’t find an active subscription."
-                }
-                showRestoreAlert = true
-            }
         }
     }
+}
 
-    private func refreshProStatus() {
-        guard !isRefreshingProStatus else { return }
-        isRefreshingProStatus = true
+private struct SettingsRow<Accessory: View>: View {
+    let icon: String
+    let title: String
+    var titleColor: Color = .ink900
+    @ViewBuilder let accessory: () -> Accessory
 
-        Task {
-            await purchaseManager.refreshEntitlements()
-            await MainActor.run {
-                isRefreshingProStatus = false
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.sage100.opacity(0.4))
+                    .frame(width: 36, height: 36)
+
+                Image(systemName: icon)
+                    .foregroundStyle(Color.sage500)
+                    .font(.system(size: 16, weight: .semibold))
             }
+
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(titleColor)
+
+            Spacer()
+
+            accessory()
         }
+    }
+}
+
+private struct ExportSelection {
+    var includeStories = true
+    var includeAttempts = true
+    var includeJobs = false
+    var includeQuestions = false
+
+    var hasSelection: Bool {
+        includeStories || includeAttempts || includeJobs || includeQuestions
+    }
+}
+
+private struct ExportOptionsSheet: View {
+    @Binding var selection: ExportSelection
+    @Binding var format: ExportFormat
+    let isGenerating: Bool
+    let onExport: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                Color.cream50.ignoresSafeArea()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        SectionHeader(title: "Export Options")
+
+                        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+                            VStack(spacing: 12) {
+                                ExportCheckboxRow(title: "Stories", isOn: $selection.includeStories)
+                                Divider().opacity(0.6)
+                                ExportCheckboxRow(title: "Attempts", isOn: $selection.includeAttempts)
+                                Divider().opacity(0.6)
+                                ExportCheckboxRow(title: "Jobs", isOn: $selection.includeJobs)
+                                Divider().opacity(0.6)
+                                ExportCheckboxRow(title: "Questions", isOn: $selection.includeQuestions)
+                            }
+                        }
+
+                        SectionHeader(title: "Export Format")
+
+                        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+                            Picker("Export Format", selection: $format) {
+                                ForEach(ExportFormat.allCases) { exportFormat in
+                                    Text(exportFormat.title).tag(exportFormat)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
+
+                        PrimaryCTAButton(title: isGenerating ? "Generating…" : "Export", systemImage: "square.and.arrow.up") {
+                            onExport()
+                        }
+                        .disabled(isGenerating || !selection.hasSelection)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .padding(.bottom, 24)
+                }
+            }
+            .navigationTitle("Export")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+private struct ExportCheckboxRow: View {
+    let title: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Button {
+            isOn.toggle()
+        } label: {
+            HStack {
+                Image(systemName: isOn ? "checkmark.square.fill" : "square")
+                    .foregroundStyle(isOn ? Color.sage500 : Color.ink400)
+                Text(title)
+                    .foregroundStyle(Color.ink900)
+                Spacer()
+            }
+            .font(.subheadline.weight(.semibold))
+        }
+        .buttonStyle(.plain)
     }
 }

@@ -46,6 +46,11 @@ final class JobsStore: ObservableObject {
         }
     }
 
+    func removeAll() {
+        jobs.removeAll()
+        persist()
+    }
+
     private func load() {
         guard let data = defaults.data(forKey: storageKey) else { return }
         do {

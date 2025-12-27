@@ -33,6 +33,7 @@ struct SettingsView: View {
     @State private var shareItems: [Any] = []
     @State private var isGeneratingExport = false
     @State private var showExportErrorAlert = false
+    @State private var showExportSelectionAlert = false
     @State private var exportSelection = ExportSelection()
     @State private var exportFormat: ExportFormat = .csv
 
@@ -105,6 +106,11 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) { }
             } message: {
                 Text("Your app has been reset to a clean state.")
+            }
+            .alert("Select at least one item", isPresented: $showExportSelectionAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Choose at least one data type to export.")
             }
             .alert("Export failed", isPresented: $showExportErrorAlert) {
                 Button("OK", role: .cancel) { }
@@ -323,7 +329,7 @@ struct SettingsView: View {
     private func exportSelectedData() {
         guard !isGeneratingExport else { return }
         guard exportSelection.hasSelection else {
-            showExportErrorAlert = true
+            showExportSelectionAlert = true
             return
         }
 

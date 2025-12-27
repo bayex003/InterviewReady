@@ -49,6 +49,7 @@ struct AttemptDetailView: View {
                 Text(attempt.questionText)
                     .font(.headline)
                     .foregroundStyle(Color.ink900)
+                    .lineLimit(3)
             }
         }
     }
@@ -134,9 +135,6 @@ struct AttemptDetailView: View {
     }
 
     private var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: attempt.timestamp)
+        DateFormatters.mediumDateTime.string(from: attempt.timestamp)
     }
 }

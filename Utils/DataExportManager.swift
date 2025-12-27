@@ -240,6 +240,17 @@ class DataExportManager {
         output.append("Generated: \(dateFormatter.string(from: Date()))")
         output.append("")
 
+        let noJobs = includeJobs && jobs.isEmpty
+        let noStories = includeStories && stories.isEmpty
+        let noAttempts = includeAttempts && attempts.isEmpty
+        let noQuestions = includeQuestions && questions.isEmpty
+        let hasAnySection = includeJobs || includeStories || includeAttempts || includeQuestions
+
+        if hasAnySection && noJobs && noStories && noAttempts && noQuestions {
+            output.append("No items found")
+            output.append("")
+        }
+
         if includeJobs {
             appendJobsSection(to: &output, jobs: jobs)
         }
@@ -262,7 +273,7 @@ class DataExportManager {
     private static func appendJobsSection(to output: inout [String], jobs: [JobApplication]) {
         output.append("JOBS")
         if jobs.isEmpty {
-            output.append("No jobs available.")
+            output.append("No jobs available")
             output.append("")
             return
         }
@@ -285,7 +296,7 @@ class DataExportManager {
     private static func appendStoriesSection(to output: inout [String], stories: [Story]) {
         output.append("STORIES")
         if stories.isEmpty {
-            output.append("No stories available.")
+            output.append("No stories available")
             output.append("")
             return
         }
@@ -312,7 +323,7 @@ class DataExportManager {
     ) {
         output.append("ATTEMPTS")
         if attempts.isEmpty {
-            output.append("No attempts available.")
+            output.append("No attempts available")
             output.append("")
             return
         }
@@ -335,7 +346,7 @@ class DataExportManager {
     private static func appendQuestionsSection(to output: inout [String], questions: [Question]) {
         output.append("QUESTIONS")
         if questions.isEmpty {
-            output.append("No questions available.")
+            output.append("No questions available")
             output.append("")
             return
         }

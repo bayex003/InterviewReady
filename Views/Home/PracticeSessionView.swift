@@ -56,6 +56,7 @@ struct PracticeSessionView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 32)
             }
+            .tapToDismissKeyboard()
 
             bottomControls
                 .padding(.horizontal, 24)
@@ -92,9 +93,11 @@ struct PracticeSessionView: View {
                 Image(systemName: "xmark")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(Color.ink900)
-                    .frame(width: 36, height: 36)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Close practice session")
+            .accessibilityHint("Returns to the question bank")
 
             Spacer()
 
@@ -113,6 +116,7 @@ struct PracticeSessionView: View {
                     .frame(minWidth: 44, minHeight: 36, alignment: .trailing)
             }
             .buttonStyle(.plain)
+            .accessibilityHint("Ends the session and shows your summary")
         }
     }
 
@@ -129,6 +133,9 @@ struct PracticeSessionView: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(Color.ink500)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Question progress")
+        .accessibilityValue("Question \(currentIndex + 1) of \(totalQuestions)")
     }
 
     private var progressBar: some View {
@@ -136,6 +143,8 @@ struct PracticeSessionView: View {
             .progressViewStyle(.linear)
             .tint(Color.sage500)
             .scaleEffect(x: 1, y: 1.4, anchor: .center)
+            .accessibilityLabel("Session progress")
+            .accessibilityValue("Question \(currentIndex + 1) of \(totalQuestions)")
     }
 
     private var questionCard: some View {
@@ -147,6 +156,8 @@ struct PracticeSessionView: View {
                     .font(.title2.weight(.bold))
                     .foregroundStyle(Color.ink900)
                     .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.85)
                     .padding(.horizontal, 8)
 
                 HStack(spacing: 16) {
@@ -192,6 +203,8 @@ struct PracticeSessionView: View {
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityValue(isActive ? "Selected" : "Not selected")
     }
 
     private var inputArea: some View {
@@ -245,6 +258,8 @@ struct PracticeSessionView: View {
                         Text(linkedStoryTitle)
                             .font(.headline)
                             .foregroundStyle(Color.ink900)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
 
                     Spacer()
@@ -255,6 +270,9 @@ struct PracticeSessionView: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Linked story")
+        .accessibilityValue(linkedStoryTitle)
+        .accessibilityHint("Opens story picker")
     }
 
     private var linkedStoryTitle: String {
@@ -285,6 +303,7 @@ struct PracticeSessionView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Skip question")
 
             Spacer()
 
@@ -303,6 +322,8 @@ struct PracticeSessionView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(isRecording ? "Stop recording" : "Start recording")
+            .accessibilityHint("Toggles recording for your response")
 
             Spacer()
 
@@ -324,6 +345,7 @@ struct PracticeSessionView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Next question")
         }
     }
 

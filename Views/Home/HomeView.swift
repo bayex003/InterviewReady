@@ -81,6 +81,8 @@ struct HomeView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.ink900)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                     .onTapGesture { showNameAlert = true }
             }
 
@@ -91,7 +93,7 @@ struct HomeView: View {
                 Image(systemName: "bell")
                     .font(.headline)
                     .foregroundStyle(Color.ink900)
-                    .padding(12)
+                    .frame(width: 44, height: 44)
                     .background(Color.surfaceWhite)
                     .clipShape(Circle())
                     .overlay(
@@ -101,6 +103,7 @@ struct HomeView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Notifications")
+            .accessibilityHint("Opens reminder settings")
         }
     }
 
@@ -158,10 +161,14 @@ struct HomeView: View {
                             .font(.title3)
                             .fontWeight(.bold)
                             .foregroundStyle(Color.ink900)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
 
                         Text("Practice random questions with AI feedback.")
                             .font(.subheadline)
                             .foregroundStyle(Color.ink600)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.9)
                     }
 
                     PrimaryCTAButton(title: "Start Session", systemImage: "arrow.right") {
@@ -191,10 +198,14 @@ struct HomeView: View {
                         Text("Story Bank")
                             .font(.headline)
                             .foregroundStyle(Color.ink900)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.9)
 
                         Text("\(allStories.count) stories ready for STAR method")
                             .font(.subheadline)
                             .foregroundStyle(Color.ink600)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.9)
                     }
 
                     Spacer()
@@ -222,6 +233,8 @@ struct HomeView: View {
                             Text("Add an application to track your progress here.")
                                 .font(.subheadline)
                                 .foregroundStyle(Color.ink500)
+                                .lineLimit(2)
+                                .minimumScaleFactor(0.9)
                         }
                     }
                 } else {
@@ -246,10 +259,14 @@ struct HomeView: View {
                                         Text(application.roleTitle)
                                             .font(.headline)
                                             .foregroundStyle(Color.ink900)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.85)
 
                                         Text("\(application.companyName) • \(application.locationDetail ?? application.locationType.rawValue)")
                                             .font(.subheadline)
                                             .foregroundStyle(Color.ink600)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.8)
                                     }
 
                                     Spacer()
@@ -321,11 +338,15 @@ private struct HomeStatCard: View {
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundStyle(Color.ink900)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
                 Text(title)
                     .font(.caption)
                     .fontWeight(.medium)
                     .foregroundStyle(Color.ink600)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
         }
     }

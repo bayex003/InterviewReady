@@ -111,16 +111,20 @@ struct JobsListView: View {
                     Image(systemName: "magnifyingglass")
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(Color.ink600)
+                        .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Search applications")
 
                 Button {
                 } label: {
                     Image(systemName: "bell")
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(Color.ink600)
+                        .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Notifications")
             }
         }
     }
@@ -226,7 +230,7 @@ private struct JobCardView: View {
 
     private var formattedNextInterview: String? {
         guard let date = job.nextInterviewDate else { return nil }
-        return JobCardView.dateFormatter.string(from: date)
+        return DateFormatters.shortWeekday.string(from: date)
     }
 
     var body: some View {
@@ -239,15 +243,21 @@ private struct JobCardView: View {
                         Text(job.roleTitle)
                             .font(.headline)
                             .foregroundStyle(Color.ink900)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
 
                         Text(job.companyName)
                             .font(.subheadline)
                             .foregroundStyle(Color.ink600)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
 
                         if let location = job.locationDetail, !location.isEmpty {
                             Text(location)
                                 .font(.caption)
                                 .foregroundStyle(Color.ink500)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
                         }
                     }
 
@@ -318,12 +328,6 @@ private struct JobCardView: View {
         }
         return "View \(job.linkedStoryIDs.count) Stories"
     }
-
-    private static let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEE, MMM d"
-        return formatter
-    }()
 }
 
 private struct JobApplicationDetailView: View {
@@ -366,10 +370,14 @@ private struct JobApplicationDetailView: View {
             Text(job.roleTitle)
                 .font(.title2.bold())
                 .foregroundStyle(Color.ink900)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
 
             Text(job.companyName)
                 .font(.subheadline)
                 .foregroundStyle(Color.ink600)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
     }
 
@@ -392,6 +400,8 @@ private struct JobApplicationDetailView: View {
                     Text(locationText)
                         .font(.subheadline)
                         .foregroundStyle(Color.ink700)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
                 }
 
                 Divider()
@@ -401,7 +411,7 @@ private struct JobApplicationDetailView: View {
                         .font(.caption)
                         .foregroundStyle(Color.ink400)
 
-                    Text(job.dateApplied, style: .date)
+                    Text(DateFormatters.mediumDate.string(from: job.dateApplied))
                         .font(.subheadline)
                         .foregroundStyle(Color.ink700)
                 }

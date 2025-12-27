@@ -22,10 +22,15 @@ struct Chip: View {
                     label
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Double tap to select")
             } else {
                 label
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(title))
+        .accessibilityValue(Text(isSelected ? "Selected" : "Not selected"))
     }
 
     private var label: some View {

@@ -70,6 +70,7 @@ struct AddApplicationView: View {
         .background(Color.cream50)
         .navigationTitle("Add Application")
         .navigationBarTitleDisplayMode(.inline)
+        .tapToDismissKeyboard()
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button {
@@ -77,7 +78,9 @@ struct AddApplicationView: View {
                 } label: {
                     Image(systemName: "xmark")
                         .foregroundStyle(Color.ink600)
+                        .frame(width: 44, height: 44)
                 }
+                .accessibilityLabel("Close")
             }
 
             ToolbarItem(placement: .confirmationAction) {

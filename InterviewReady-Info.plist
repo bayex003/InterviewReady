@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSCameraUsageDescription</key>
+	<string>InterviewReady uses the camera to scan handwritten notes so you can turn them into STAR stories.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>InterviewReady uses the microphone to record practice answers during drills.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>InterviewReady uses speech recognition to create text notes from your recorded practice answers.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>

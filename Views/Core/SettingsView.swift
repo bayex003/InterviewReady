@@ -1,9 +1,12 @@
 import SwiftUI
 import SwiftData
+import StoreKit
+import UIKit
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openURL) private var openURL
     @EnvironmentObject private var purchaseManager: PurchaseManager
     @EnvironmentObject private var dataController: AppDataController
     @EnvironmentObject private var jobsStore: JobsStore
@@ -16,13 +19,30 @@ struct SettingsView: View {
     @AppStorage("isDailyReminderEnabled") private var isDailyReminderEnabled = false
     @AppStorage("dailyReminderTime") private var dailyReminderTime: Double = 32400 // 9:00 AM
 
+    // Review Prompt
+    @AppStorage("firstLaunchDate") private var firstLaunchDate: Double = 0
+    @AppStorage("savedSessionCount") private var savedSessionCount = 0
+    @AppStorage("hasRequestedReview") private var hasRequestedReview = false
+
     // Feedback configuration
     private let supportEmail = "support@example.com"
+    private let privacyPolicyURL = URL(string: "https://example.com/privacy")
+    private let termsURL = URL(string: "https://example.com/terms")
+    private let subscriptionsURL = URL(string: "https://apps.apple.com/account/subscriptions")
     private let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    private let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
 
     // Alerts
     @State private var showResetConfirmation = false
     @State private var showResetSuccess = false
+    @State private var showExportErrorAlert = false
+    @State private var showExportSelectionAlert = false
+    @State private var showReminderPrompt = false
+    @State private var showSupportCopiedAlert = false
+    @State private var showRestoreAlert = false
+    @State private var showRateEligibilityAlert = false
+
+    @State private var restoreMessage: String = ""
 
     // Paywall
     @State private var showPaywall = false
@@ -32,8 +52,6 @@ struct SettingsView: View {
     @State private var showShareSheet = false
     @State private var shareItems: [Any] = []
     @State private var isGeneratingExport = false
-    @State private var showExportErrorAlert = false
-    @State private var showExportSelectionAlert = false
     @State private var exportSelection = ExportSelection()
     @State private var exportFormat: ExportFormat = .csv
 
@@ -44,7 +62,9 @@ struct SettingsView: View {
             get: { Date(timeIntervalSince1970: dailyReminderTime) },
             set: { newDate in
                 dailyReminderTime = newDate.timeIntervalSince1970
-                scheduleNotification()
+                if isDailyReminderEnabled {
+                    scheduleNotification()
+                }
             }
         )
     }
@@ -117,6 +137,38 @@ struct SettingsView: View {
             } message: {
                 Text("We couldn’t generate the export files. Please try again.")
             }
+            .alert("Enable daily reminder?", isPresented: $showReminderPrompt) {
+                Button("Not Now", role: .cancel) {
+                    isDailyReminderEnabled = false
+                    scheduleNotification()
+                }
+                Button("Allow Reminders") {
+                    NotificationManager.shared.requestPermission { granted in
+                        if granted {
+                            scheduleNotification()
+                        } else {
+                            isDailyReminderEnabled = false
+                        }
+                    }
+                }
+            } message: {
+                Text("InterviewReady can send a daily practice reminder at your chosen time.")
+            }
+            .alert("Support email copied", isPresented: $showSupportCopiedAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("We copied \(supportEmail) to your clipboard.")
+            }
+            .alert("Restore Purchases", isPresented: $showRestoreAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(restoreMessage)
+            }
+            .alert("Rate InterviewReady", isPresented: $showRateEligibilityAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Rate requests unlock after 3 saved sessions or 7 days of use.")
+            }
         }
     }
 
@@ -158,12 +210,39 @@ struct SettingsView: View {
                         .font(.subheadline)
                         .foregroundStyle(Color.ink600)
 
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("What Pro unlocks")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.ink900)
+
+                        ProUnlockRow(text: "Export your stories and practice data")
+                        ProUnlockRow(text: "Attempt history and progress tracking")
+                        ProUnlockRow(text: "Scan handwritten notes into stories")
+                        ProUnlockRow(text: "iCloud sync and backups")
+                    }
+
                     PrimaryCTAButton(title: purchaseManager.isPro ? "Manage Subscription" : "Upgrade to Pro", systemImage: "chevron.right") {
-                        if purchaseManager.isPro {
-                            refreshProStatus()
+                        if purchaseManager.isPro, let subscriptionsURL {
+                            openURL(subscriptionsURL)
                         } else {
                             showPaywall = true
                         }
+                    }
+
+                    HStack(spacing: 12) {
+                        Button("Restore Purchases") {
+                            restorePurchases()
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(Color.sage500)
+
+                        Button("Manage Subscription") {
+                            if let subscriptionsURL {
+                                openURL(subscriptionsURL)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(Color.sage500)
                     }
                 }
             }
@@ -206,11 +285,10 @@ struct SettingsView: View {
                             .tint(Color.sage500)
                             .onChange(of: isDailyReminderEnabled) { _, newValue in
                                 if newValue {
-                                    NotificationManager.shared.requestPermission { granted in
-                                        if !granted { isDailyReminderEnabled = false }
-                                    }
+                                    showReminderPrompt = true
+                                } else {
+                                    scheduleNotification()
                                 }
-                                scheduleNotification()
                             }
                     }
 
@@ -269,20 +347,56 @@ struct SettingsView: View {
 
             CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
                 VStack(spacing: 12) {
-                    if let url = supportMailURL {
-                        Link(destination: url) {
-                            SettingsRow(icon: "envelope", title: "Send Feedback") {
+                    Button {
+                        handleSupportContact()
+                    } label: {
+                        SettingsRow(icon: "envelope", title: "Contact Support") {
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(Color.ink400)
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    Divider().opacity(0.6)
+
+                    Button {
+                        requestReview()
+                    } label: {
+                        SettingsRow(icon: "star", title: "Rate InterviewReady") {
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(Color.ink400)
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    Divider().opacity(0.6)
+
+                    if let privacyPolicyURL {
+                        Link(destination: privacyPolicyURL) {
+                            SettingsRow(icon: "hand.raised", title: "Privacy Policy") {
                                 Image(systemName: "chevron.right")
                                     .foregroundStyle(Color.ink400)
                             }
                         }
                         .buttonStyle(.plain)
+
+                        Divider().opacity(0.6)
                     }
 
-                    Divider().opacity(0.6)
+                    if let termsURL {
+                        Link(destination: termsURL) {
+                            SettingsRow(icon: "doc.text", title: "Terms of Use") {
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(Color.ink400)
+                            }
+                        }
+                        .buttonStyle(.plain)
+
+                        Divider().opacity(0.6)
+                    }
 
                     SettingsRow(icon: "info.circle", title: "App Version") {
-                        Text(appVersion)
+                        Text("Version \(appVersion) (Build \(buildNumber))")
                             .font(.subheadline)
                             .foregroundStyle(Color.ink500)
                     }
@@ -299,12 +413,37 @@ struct SettingsView: View {
         }
     }
 
-    private var supportMailURL: URL? {
-        let mailto = "mailto:\(supportEmail)?subject=InterviewReady%20Feedback%20(v\(appVersion))"
-        return URL(string: mailto)
+    // MARK: - Helpers
+
+    private func handleSupportContact() {
+        if let url = supportMailURL, UIApplication.shared.canOpenURL(url) {
+            openURL(url)
+        } else {
+            UIPasteboard.general.string = supportEmail
+            showSupportCopiedAlert = true
+        }
     }
 
-    // MARK: - Helpers
+    private func requestReview() {
+        guard canRequestReview else {
+            showRateEligibilityAlert = true
+            return
+        }
+
+        SKStoreReviewController.requestReview()
+        hasRequestedReview = true
+    }
+
+    private var canRequestReview: Bool {
+        guard !hasRequestedReview else { return false }
+        let daysSinceLaunch = max(0, Date().timeIntervalSince1970 - firstLaunchDate) / 86400
+        return savedSessionCount >= 3 || daysSinceLaunch >= 7
+    }
+
+    private var supportMailURL: URL? {
+        let mailto = "mailto:\(supportEmail)?subject=InterviewReady%20Support%20(v\(appVersion))"
+        return URL(string: mailto)
+    }
 
     private func scheduleNotification() {
         let date = Date(timeIntervalSince1970: dailyReminderTime)
@@ -325,7 +464,6 @@ struct SettingsView: View {
         }
     }
 
-    @MainActor
     private func exportSelectedData() {
         guard !isGeneratingExport else { return }
         guard exportSelection.hasSelection else {
@@ -356,9 +494,30 @@ struct SettingsView: View {
         isGeneratingExport = false
     }
 
-    private func refreshProStatus() {
+    private func restorePurchases() {
         Task {
-            await purchaseManager.refreshEntitlements()
+            await purchaseManager.restore()
+            if purchaseManager.isPro {
+                restoreMessage = "Your purchases have been restored."
+            } else {
+                restoreMessage = "No purchases were found to restore."
+            }
+            showRestoreAlert = true
+        }
+    }
+}
+
+private struct ProUnlockRow: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(Color.sage500)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(Color.ink700)
+            Spacer()
         }
     }
 }

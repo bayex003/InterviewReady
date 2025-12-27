@@ -8,6 +8,8 @@ struct SessionSummaryView: View {
 
     @ObservedObject var attemptsStore: AttemptsStore
 
+    @AppStorage("savedSessionCount") private var savedSessionCount = 0
+
     @State private var hasSaved = false
     @State private var showAttemptsList = false
 
@@ -130,6 +132,7 @@ struct SessionSummaryView: View {
         guard !hasSaved else { return }
         attemptsStore.add(attempts)
         hasSaved = true
+        savedSessionCount += 1
         showAttemptsList = true
     }
 

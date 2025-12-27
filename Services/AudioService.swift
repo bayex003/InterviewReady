@@ -13,10 +13,9 @@ final class AudioService: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDelega
 
     override init() {
         super.init()
-        setupSession()
     }
 
-    private func setupSession() {
+    private func setupSessionForRecording() {
         let session = AVAudioSession.sharedInstance()
         do {
             // "playAndRecord" is required for recording
@@ -33,7 +32,19 @@ final class AudioService: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDelega
         }
     }
 
+    private func setupSessionForPlayback() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playback, mode: .default, options: [])
+            try session.setActive(true)
+        } catch {
+            print("Failed to set up playback session: \(error)")
+        }
+    }
+
     func startRecording(id: String) {
+        setupSessionForRecording()
+
         let fileName = "answer_\(id).m4a"
         let path = FileManager.default
             .urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -82,6 +93,7 @@ final class AudioService: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDelega
         }
 
         do {
+            setupSessionForPlayback()
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.delegate = self
             audioPlayer?.volume = 1.0
@@ -111,4 +123,3 @@ final class AudioService: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDelega
         print("⏹️ Playback finished.")
     }
 }
-

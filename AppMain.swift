@@ -12,6 +12,7 @@ import SwiftData
 struct InterviewReadyApp: App {
     // Onboarding State
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @AppStorage("firstLaunchDate") private var firstLaunchDate: Double = 0
 
     @StateObject private var purchaseManager = PurchaseManager()
     @StateObject private var dataController = AppDataController()
@@ -70,7 +71,9 @@ struct InterviewReadyApp: App {
                 }
             }
             .task {
-                // Runs once on launch
+                if firstLaunchDate == 0 {
+                    firstLaunchDate = Date().timeIntervalSince1970
+                }
                 await prepareApp()
             }
         }

@@ -129,89 +129,73 @@ struct HomeView: View {
                         Button {
                             selectedTab = .jobs
                         } label: {
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack {
-                                    Image(systemName: "calendar.badge.clock")
-                                        .foregroundStyle(.red)
-                                    Text("UPCOMING INTERVIEW")
-                                        .font(.caption)
+                            CardContainer {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Image(systemName: "calendar.badge.clock")
+                                            .foregroundStyle(.red)
+                                        Text("UPCOMING INTERVIEW")
+                                            .font(.caption)
+                                            .fontWeight(.bold)
+                                            .foregroundStyle(.red)
+                                        Spacer()
+                                        Text(interviewDate.formatted(.relative(presentation: .named)))
+                                            .font(.caption)
+                                            .foregroundStyle(Color.ink600)
+                                    }
+
+                                    Text(nextUp.roleTitle)
+                                        .font(.title3)
                                         .fontWeight(.bold)
-                                        .foregroundStyle(.red)
-                                    Spacer()
-                                    Text(interviewDate.formatted(.relative(presentation: .named)))
-                                        .font(.caption)
+                                        .foregroundStyle(Color.ink900)
+
+                                    Text("at \(nextUp.companyName)")
+                                        .font(.body)
                                         .foregroundStyle(Color.ink600)
                                 }
-
-                                Text(nextUp.roleTitle)
-                                    .font(.title3)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(Color.ink900)
-
-                                Text("at \(nextUp.companyName)")
-                                    .font(.body)
-                                    .foregroundStyle(Color.ink600)
                             }
-                            .padding()
-                            .background(Color.surfaceWhite) // dark-mode safe (no pure white)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(color: Color.black.opacity(0.05), radius: 10, y: 4)
-                            .padding(.horizontal)
                         }
                         .buttonStyle(.plain)
+                        .padding(.horizontal)
                         .accessibilityLabel("Upcoming interview, \(nextUp.roleTitle) at \(nextUp.companyName)")
                         .accessibilityHint("Opens Jobs tab")
                     }
 
                     // FIRST RUN HELPER
                     if isFirstRunEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Get started")
-                                .font(.headline)
-                                .foregroundStyle(Color.ink900)
+                        CardContainer {
+                            VStack(alignment: .leading, spacing: 16) {
+                                SectionHeader(title: "Get started")
 
-                            Text("Add your first job and capture your first story.")
-                                .font(.subheadline)
-                                .foregroundStyle(Color.ink600)
+                                Text("Add your first job and capture your first story.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(Color.ink600)
 
-                            HStack(spacing: 12) {
-                                Button {
-                                    selectedTab = .jobs
-                                    router.presentAddJob = true
-                                } label: {
-                                    Text("Add a Job")
-                                        .fontWeight(.bold)
-                                        .padding(.vertical, 10)
-                                        .frame(maxWidth: .infinity)
-                                        .background(Color.sage500)
-                                        .foregroundColor(.white)
-                                        .clipShape(Capsule())
+                                VStack(spacing: 12) {
+                                    PrimaryCTAButton(title: "Add a Job", systemImage: nil) {
+                                        selectedTab = .jobs
+                                        router.presentAddJob = true
+                                    }
+                                    .accessibilityHint("Switches to Jobs tab and opens Add Job")
+
+                                    Button {
+                                        selectedTab = .stories
+                                        router.presentAddMoment = true
+                                    } label: {
+                                        Text("Write a Story")
+                                            .fontWeight(.bold)
+                                            .padding(.vertical, 10)
+                                            .frame(maxWidth: .infinity)
+                                            .background(Color.clear)
+                                            .foregroundStyle(Color.ink900)
+                                            .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
+                                            .clipShape(Capsule())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityHint("Switches to Stories tab and opens Add Story")
                                 }
-                                .buttonStyle(.plain)
-                                .accessibilityHint("Switches to Jobs tab and opens Add Job")
-
-                                // Secondary button (outlined) — avoids black fill in dark mode
-                                Button {
-                                    selectedTab = .stories
-                                    router.presentAddMoment = true
-                                } label: {
-                                    Text("Write a Story")
-                                        .fontWeight(.bold)
-                                        .padding(.vertical, 10)
-                                        .frame(maxWidth: .infinity)
-                                        .background(Color.clear)
-                                        .foregroundStyle(Color.ink900)
-                                        .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
-                                        .clipShape(Capsule())
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityHint("Switches to Stories tab and opens Add Story")
                             }
                         }
-                        .padding()
-                        .background(Color.surfaceWhite)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .shadow(color: Color.black.opacity(0.05), radius: 10, y: 4)
                         .padding(.horizontal)
                     }
 
@@ -285,38 +269,32 @@ struct HomeView: View {
                     .accessibilityHint("Starts a short practice session")
 
                     // QUICK ACTIONS (below drill)
-                    HStack(spacing: 12) {
-                        Button {
-                            selectedTab = .jobs
-                            router.presentAddJob = true
-                        } label: {
-                            Text("+ Add Job")
-                                .fontWeight(.bold)
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: .infinity)
-                                .background(Color.sage500)
-                                .foregroundColor(.white)
-                                .clipShape(Capsule())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Switches to Jobs tab and opens Add Job")
+                    VStack(spacing: 12) {
+                        SectionHeader(title: "Quick actions")
 
-                        // Secondary button (outlined) — avoids black fill in dark mode
-                        Button {
-                            selectedTab = .stories
-                            router.presentAddMoment = true
-                        } label: {
-                            Text("+ Add Story")
-                                .fontWeight(.bold)
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: .infinity)
-                                .background(Color.clear)
-                                .foregroundStyle(Color.ink900)
-                                .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
-                                .clipShape(Capsule())
+                        HStack(spacing: 12) {
+                            PrimaryCTAButton(title: "+ Add Job", systemImage: nil) {
+                                selectedTab = .jobs
+                                router.presentAddJob = true
+                            }
+                            .accessibilityHint("Switches to Jobs tab and opens Add Job")
+
+                            Button {
+                                selectedTab = .stories
+                                router.presentAddMoment = true
+                            } label: {
+                                Text("+ Add Story")
+                                    .fontWeight(.bold)
+                                    .padding(.vertical, 10)
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.clear)
+                                    .foregroundStyle(Color.ink900)
+                                    .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
+                                    .clipShape(Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityHint("Switches to Stories tab and opens Add Story")
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Switches to Stories tab and opens Add Story")
                     }
                     .padding(.horizontal)
 

@@ -17,6 +17,9 @@ struct HomeView: View {
     // Settings
     @State private var showSettings = false
 
+    // ✅ Attempt History
+    @State private var showAttemptHistory = false
+
     // DEBUG reset UI
     @State private var showResetSeedAlert = false
     @State private var showResetDoneAlert = false
@@ -68,6 +71,31 @@ struct HomeView: View {
         return "Today’s focus: Keep momentum"
     }
 
+    private var attemptHistoryButton: some View {
+        Button {
+            showAttemptHistory = true
+        } label: {
+            HStack {
+                Image(systemName: "waveform")
+                    .font(.title3)
+
+                Text("Attempt History")
+                    .fontWeight(.bold)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(Color.ink400)
+            }
+            .padding()
+            .background(Color.surfaceWhite)
+            .foregroundStyle(Color.ink900)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: Color.black.opacity(0.05), radius: 10, y: 4)
+        }
+        .padding(.horizontal)
+    }
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -129,109 +157,116 @@ struct HomeView: View {
                         Button {
                             selectedTab = .jobs
                         } label: {
-                            CardContainer {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    HStack {
-                                        Image(systemName: "calendar.badge.clock")
-                                            .foregroundStyle(.red)
-                                        Text("UPCOMING INTERVIEW")
-                                            .font(.caption)
-                                            .fontWeight(.bold)
-                                            .foregroundStyle(.red)
-                                        Spacer()
-                                        Text(interviewDate.formatted(.relative(presentation: .named)))
-                                            .font(.caption)
-                                            .foregroundStyle(Color.ink600)
-                                    }
-
-                                    Text(nextUp.roleTitle)
-                                        .font(.title3)
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Image(systemName: "calendar.badge.clock")
+                                        .foregroundStyle(.red)
+                                    Text("UPCOMING INTERVIEW")
+                                        .font(.caption)
                                         .fontWeight(.bold)
-                                        .foregroundStyle(Color.ink900)
-
-                                    Text("at \(nextUp.companyName)")
-                                        .font(.body)
+                                        .foregroundStyle(.red)
+                                    Spacer()
+                                    Text(interviewDate.formatted(.relative(presentation: .named)))
+                                        .font(.caption)
                                         .foregroundStyle(Color.ink600)
                                 }
+
+                                Text(nextUp.roleTitle)
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(Color.ink900)
+
+                                Text("at \(nextUp.companyName)")
+                                    .font(.body)
+                                    .foregroundStyle(Color.ink600)
                             }
+                            .padding()
+                            .background(Color.surfaceWhite)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(color: Color.black.opacity(0.05), radius: 10, y: 4)
+                            .padding(.horizontal)
                         }
                         .buttonStyle(.plain)
-                        .padding(.horizontal)
                         .accessibilityLabel("Upcoming interview, \(nextUp.roleTitle) at \(nextUp.companyName)")
                         .accessibilityHint("Opens Jobs tab")
                     }
 
                     // FIRST RUN HELPER
                     if isFirstRunEmpty {
-                        CardContainer {
-                            VStack(alignment: .leading, spacing: 16) {
-                                SectionHeader(title: "Get started")
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Get started")
+                                .font(.headline)
+                                .foregroundStyle(Color.ink900)
 
-                                Text("Add your first job and capture your first story.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(Color.ink600)
+                            Text("Add your first job and capture your first story.")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.ink600)
 
-                                VStack(spacing: 12) {
-                                    PrimaryCTAButton(title: "Add a Job", systemImage: nil) {
-                                        selectedTab = .jobs
-                                        router.presentAddJob = true
-                                    }
-                                    .accessibilityHint("Switches to Jobs tab and opens Add Job")
-
-                                    Button {
-                                        selectedTab = .stories
-                                        router.presentAddMoment = true
-                                    } label: {
-                                        Text("Write a Story")
-                                            .fontWeight(.bold)
-                                            .padding(.vertical, 10)
-                                            .frame(maxWidth: .infinity)
-                                            .background(Color.clear)
-                                            .foregroundStyle(Color.ink900)
-                                            .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
-                                            .clipShape(Capsule())
-                                    }
-                                    .buttonStyle(.plain)
-                                    .accessibilityHint("Switches to Stories tab and opens Add Story")
+                            HStack(spacing: 12) {
+                                Button {
+                                    selectedTab = .jobs
+                                    router.presentAddJob = true
+                                } label: {
+                                    Text("Add a Job")
+                                        .fontWeight(.bold)
+                                        .padding(.vertical, 10)
+                                        .frame(maxWidth: .infinity)
+                                        .background(Color.sage500)
+                                        .foregroundColor(.white)
+                                        .clipShape(Capsule())
                                 }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Switches to Jobs tab and opens Add Job")
+
+                                Button {
+                                    selectedTab = .stories
+                                    router.presentAddMoment = true
+                                } label: {
+                                    Text("Write a Story")
+                                        .fontWeight(.bold)
+                                        .padding(.vertical, 10)
+                                        .frame(maxWidth: .infinity)
+                                        .background(Color.clear)
+                                        .foregroundStyle(Color.ink900)
+                                        .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Switches to Stories tab and opens Add Story")
                             }
                         }
+                        .padding()
+                        .background(Color.surfaceWhite)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: Color.black.opacity(0.05), radius: 10, y: 4)
                         .padding(.horizontal)
                     }
 
-                    // STATS GRID (tappable) - hidden on first run to reduce overload
+                    // STATS GRID (tappable)
                     if !isFirstRunEmpty {
                         HStack(spacing: 16) {
                             Button { selectedTab = .jobs } label: {
                                 StatCard(title: "Jobs", value: "\(allJobs.count)", icon: "briefcase.fill", color: Color.sage500)
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("Jobs, \(allJobs.count)")
-                            .accessibilityHint("Opens Jobs tab")
 
                             Button { selectedTab = .stories } label: {
                                 StatCard(title: "Stories", value: "\(allStories.count)", icon: "book.closed.fill", color: Color.blue)
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("Stories, \(allStories.count)")
-                            .accessibilityHint("Opens Stories tab")
                         }
                         .padding(.horizontal)
 
                         HStack(spacing: 16) {
-                            Button { selectedTab = .questions } label: {
+                            Button { selectedTab = .practice } label: {
                                 StatCard(title: "Answered", value: "\(answeredQuestions.count)", icon: "checkmark.circle.fill", color: Color.green)
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("Answered questions, \(answeredQuestions.count)")
-                            .accessibilityHint("Opens Questions tab")
 
                             Button { selectedTab = .jobs } label: {
                                 StatCard(title: "Active Jobs", value: "\(activeJobs.count)", icon: "chart.line.uptrend.xyaxis", color: Color.orange)
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("Active jobs, \(activeJobs.count)")
-                            .accessibilityHint("Opens Jobs tab")
                         }
                         .padding(.horizontal)
                     }
@@ -266,35 +301,61 @@ struct HomeView: View {
                     .padding(.horizontal)
                     .padding(.top, 8)
                     .padding(.bottom, 10)
-                    .accessibilityHint("Starts a short practice session")
 
-                    // QUICK ACTIONS (below drill)
-                    VStack(spacing: 12) {
-                        SectionHeader(title: "Quick actions")
-
-                        HStack(spacing: 12) {
-                            PrimaryCTAButton(title: "+ Add Job", systemImage: nil) {
-                                selectedTab = .jobs
-                                router.presentAddJob = true
-                            }
-                            .accessibilityHint("Switches to Jobs tab and opens Add Job")
-
-                            Button {
-                                selectedTab = .stories
-                                router.presentAddMoment = true
-                            } label: {
-                                Text("+ Add Story")
-                                    .fontWeight(.bold)
-                                    .padding(.vertical, 10)
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.clear)
-                                    .foregroundStyle(Color.ink900)
-                                    .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
-                                    .clipShape(Capsule())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityHint("Switches to Stories tab and opens Add Story")
+                    // QUICK ACTIONS
+                    HStack(spacing: 12) {
+                        Button {
+                            selectedTab = .jobs
+                            router.presentAddJob = true
+                        } label: {
+                            Text("+ Add Job")
+                                .fontWeight(.bold)
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.sage500)
+                                .foregroundColor(.white)
+                                .clipShape(Capsule())
                         }
+                        .buttonStyle(.plain)
+
+                        Button {
+                            selectedTab = .stories
+                            router.presentAddMoment = true
+                        } label: {
+                            Text("+ Add Story")
+                                .fontWeight(.bold)
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.clear)
+                                .foregroundStyle(Color.ink900)
+                                .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
+                                .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal)
+
+                    // ✅ NEW: Attempt History button (full-width, below quick actions)
+                    Button {
+                        showAttemptHistory = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "waveform")
+                                .font(.title3)
+
+                            Text("Attempt History")
+                                .fontWeight(.bold)
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(Color.ink400)
+                        }
+                        .padding()
+                        .background(Color.surfaceWhite)
+                        .foregroundStyle(Color.ink900)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: Color.black.opacity(0.05), radius: 10, y: 4)
                     }
                     .padding(.horizontal)
 
@@ -307,11 +368,13 @@ struct HomeView: View {
             .fullScreenCover(isPresented: $showDrill) {
                 PracticeSessionView()
             }
+            .sheet(isPresented: $showAttemptHistory) {
+                AttemptHistoryView()
+            }
             .sheet(isPresented: $showSettings) {
-                SettingsView() // rename if your settings screen has a different name
+                SettingsView()
             }
             .onAppear {
-                // Show only once after fresh install, delay slightly so it won’t pop over splash fade
                 if !hasCompletedNamePrompt,
                    userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {

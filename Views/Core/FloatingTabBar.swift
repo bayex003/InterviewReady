@@ -7,8 +7,8 @@ struct FloatingTabBar: View {
         switch tab {
         case .home: return "Home"
         case .jobs: return "Jobs"
-        case .questions: return "Questions"
         case .stories: return "Stories"
+        case .practice: return "Practice"
         }
     }
 
@@ -23,8 +23,8 @@ struct FloatingTabBar: View {
         switch tab {
         case .home: return "house.fill"
         case .jobs: return "briefcase.fill"
-        case .questions: return "bubble.left.and.bubble.right.fill"
         case .stories: return "book.closed.fill"
+        case .practice: return "brain.head.profile"
         }
     }
 

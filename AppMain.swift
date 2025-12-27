@@ -15,6 +15,7 @@ struct InterviewReadyApp: App {
 
     @StateObject private var purchaseManager = PurchaseManager()
     @StateObject private var dataController = AppDataController()
+    @StateObject private var jobsStore = JobsStore()
 
     // Fade transition into the real app
     @State private var isAppReady = false
@@ -35,6 +36,7 @@ struct InterviewReadyApp: App {
                     .modelContainer(container)
                     .environmentObject(purchaseManager)
                     .environmentObject(dataController)
+                    .environmentObject(jobsStore)
 
                 } else if let containerLoadError = dataController.loadError {
                     // If something goes wrong, show a simple error instead of a blank screen

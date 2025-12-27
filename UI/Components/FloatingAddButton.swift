@@ -15,6 +15,8 @@ struct FloatingAddButton: View {
                 .shadow(color: Color.black.opacity(0.15), radius: 10, y: 6)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Add")
+        .accessibilityHint("Creates a new item")
     }
 }
 

@@ -45,19 +45,7 @@ struct QuestionsListView: View {
 
                     categoryRow
 
-                    VStack(spacing: 16) {
-                        ForEach(filteredQuestions) { question in
-                            QuestionBankRow(
-                                question: question,
-                                isSelecting: isSelecting,
-                                isSelected: selectedQuestionIDs.contains(question.id),
-                                onToggleSelection: {
-                                    toggleSelection(for: question)
-                                }
-                            )
-                        }
-                    }
-                    .padding(.bottom, isSelecting && !selectedQuestionIDs.isEmpty ? 80 : 16)
+                    questionsContent
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
@@ -127,6 +115,8 @@ struct QuestionsListView: View {
                         Text("\(attemptsStore.attempts.count) saved in your history")
                             .font(.subheadline)
                             .foregroundStyle(Color.ink500)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
 
                     Spacer()
@@ -151,6 +141,7 @@ struct QuestionsListView: View {
 
             Image(systemName: "mic.fill")
                 .foregroundStyle(Color.ink400)
+                .accessibilityHidden(true)
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 14)
@@ -177,6 +168,57 @@ struct QuestionsListView: View {
             }
             .padding(.vertical, 4)
         }
+    }
+
+    private var questionsContent: some View {
+        VStack(spacing: 16) {
+            if questions.isEmpty {
+                CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("No questions yet")
+                            .font(.headline)
+                            .foregroundStyle(Color.ink900)
+
+                        Text("Add your first interview prompt to start practicing.")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.ink500)
+
+                        PrimaryCTAButton(title: "Add a question") {
+                            showAddQuestion = true
+                        }
+                    }
+                }
+            } else if filteredQuestions.isEmpty {
+                CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("No questions found")
+                            .font(.headline)
+                            .foregroundStyle(Color.ink900)
+
+                        Text("Try clearing your search or choosing a different category.")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.ink500)
+
+                        PrimaryCTAButton(title: "Reset filters") {
+                            searchText = ""
+                            selectedCategory = .all
+                        }
+                    }
+                }
+            } else {
+                ForEach(filteredQuestions) { question in
+                    QuestionBankRow(
+                        question: question,
+                        isSelecting: isSelecting,
+                        isSelected: selectedQuestionIDs.contains(question.id),
+                        onToggleSelection: {
+                            toggleSelection(for: question)
+                        }
+                    )
+                }
+            }
+        }
+        .padding(.bottom, isSelecting && !selectedQuestionIDs.isEmpty ? 80 : 16)
     }
 
     private var startSessionButton: some View {
@@ -282,8 +324,10 @@ private struct QuestionBankRow: View {
                         Image(systemName: isSelected ? "checkmark.square.fill" : "square")
                             .font(.title3)
                             .foregroundStyle(isSelected ? Color.sage500 : Color.ink300)
+                            .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(isSelected ? "Deselect question" : "Select question")
                 }
             }
             .contentShape(Rectangle())

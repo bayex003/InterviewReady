@@ -111,11 +111,12 @@ struct StoryBankView: View {
                 Image(systemName: "bell")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(Color.ink600)
-                    .padding(8)
+                    .frame(width: 44, height: 44)
                     .background(Circle().fill(Color.surfaceWhite))
                     .overlay(Circle().stroke(Color.ink200, lineWidth: 1))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Notifications")
         }
     }
 
@@ -251,7 +252,7 @@ private struct StoryCardView: View {
     let story: Story
 
     private var formattedDate: String {
-        StoryDateFormatter.shared.string(from: story.lastUpdated)
+        DateFormatters.mediumDate.string(from: story.lastUpdated)
     }
 
     private var displayTags: [String] {
@@ -260,114 +261,49 @@ private struct StoryCardView: View {
         return Array(tags.prefix(2))
     }
 
-    private var progressValue: Double {
+    private var cardDescription: String {
         let fields = [story.situation, story.task, story.action, story.result]
         let filled = fields.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        return Double(filled.count) / 4.0
-    }
-
-    private var progressLabel: String {
-        progressValue >= 1 ? "STAR READY" : "IN PROGRESS"
-    }
-
-    private var summaryText: String {
-        let candidates = [story.result, story.action, story.task, story.situation, story.notes]
-        if let first = candidates.first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) {
-            return first
+        if filled.isEmpty {
+            return "Add STAR details to make this story stronger."
         }
-        return "Add the story details to build your STAR response."
+        return filled.joined(separator: " • ")
     }
 
     var body: some View {
-        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 20, showShadow: false) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .center, spacing: 10) {
-                    HStack(spacing: 8) {
-                        ForEach(displayTags, id: \.self) { tag in
-                            Chip(title: tag, isSelected: true)
-                        }
+        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(story.title)
+                            .font(.headline)
+                            .foregroundStyle(Color.ink900)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.9)
 
-                        Text("• \(formattedDate)")
+                        Text(formattedDate)
                             .font(.caption)
-                            .foregroundStyle(Color.ink500)
+                            .foregroundStyle(Color.ink400)
                     }
 
                     Spacer()
 
-                    StarProgressBadge(progress: progressValue)
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(Color.ink300)
                 }
 
-                Text(story.title)
-                    .font(.headline)
-                    .foregroundStyle(Color.ink900)
-
-                Text(summaryText)
+                Text(cardDescription)
                     .font(.subheadline)
                     .foregroundStyle(Color.ink500)
                     .lineLimit(2)
+                    .minimumScaleFactor(0.9)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    StoryProgressBar(progress: progressValue)
-
-                    Text(progressLabel)
-                        .font(.caption2)
-                        .foregroundStyle(progressValue >= 1 ? Color.sage500 : Color.ink500)
-                        .tracking(1)
+                HStack(spacing: 8) {
+                    ForEach(displayTags, id: \.self) { tag in
+                        Chip(title: tag, isSelected: true)
+                    }
                 }
             }
         }
     }
-}
-
-private struct StoryProgressBar: View {
-    let progress: Double
-
-    var body: some View {
-        GeometryReader { proxy in
-            let width = proxy.size.width
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.ink100)
-                    .frame(height: 6)
-
-                Capsule()
-                    .fill(Color.sage500)
-                    .frame(width: width * progress, height: 6)
-            }
-        }
-        .frame(height: 6)
-    }
-}
-
-private struct StarProgressBadge: View {
-    let progress: Double
-
-    private var percentage: Int {
-        Int(progress * 100)
-    }
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color.ink200, lineWidth: 4)
-
-            Circle()
-                .trim(from: 0, to: progress)
-                .stroke(Color.sage500, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-
-            Text("\(percentage)")
-                .font(.caption.bold())
-                .foregroundStyle(Color.ink900)
-        }
-        .frame(width: 36, height: 36)
-    }
-}
-
-private enum StoryDateFormatter {
-    static let shared: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMM d"
-        return formatter
-    }()
 }

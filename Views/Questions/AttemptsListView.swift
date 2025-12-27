@@ -5,6 +5,8 @@ struct AttemptsListView: View {
     @ObservedObject var attemptsStore: AttemptsStore
     @Query private var stories: [Story]
 
+    @Environment(\.dismiss) private var dismiss
+
     @State private var searchText = ""
     @State private var selectedFilter: AttemptFilter = .all
 
@@ -20,6 +22,7 @@ struct AttemptsListView: View {
             .padding(.top, 16)
             .padding(.bottom, 24)
         }
+        .tapToDismissKeyboard()
         .background(Color.cream50.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -81,6 +84,10 @@ struct AttemptsListView: View {
                         Text("Save a session summary to keep your practice history here.")
                             .font(.subheadline)
                             .foregroundStyle(Color.ink500)
+
+                        PrimaryCTAButton(title: "Start practicing") {
+                            dismiss()
+                        }
                     }
                 }
             } else {
@@ -134,9 +141,7 @@ struct AttemptsListView: View {
         if Calendar.current.isDateInYesterday(date) {
             return "Yesterday"
         }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: date)
+        return DateFormatters.mediumDate.string(from: date)
     }
 
     private func storyTitle(for attempt: Attempt) -> String? {
@@ -187,9 +192,7 @@ private struct AttemptRow: View {
     }
 
     private var formattedTime: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: attempt.timestamp)
+        DateFormatters.timeOnly.string(from: attempt.timestamp)
     }
 }
 

@@ -76,6 +76,15 @@ struct NewStoryView: View {
         story != nil
     }
 
+    private var hasStarContent: Bool {
+        [situation, task, action, result].contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    private var canSave: Bool {
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !isProcessingScan && (!trimmedTitle.isEmpty || hasStarContent)
+    }
+
     private var availableTags: [String] {
         let storeTags = StoryStore(stories: stories).allTags
         let combined = storeTags + Array(selectedTags)
@@ -107,6 +116,7 @@ struct NewStoryView: View {
             .padding(.top, 12)
             .safeAreaPadding(.bottom, 120)
         }
+        .tapToDismissKeyboard()
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .sheet(item: $activeSheet) { sheet in
@@ -203,7 +213,7 @@ struct NewStoryView: View {
             }
             .font(.headline)
             .foregroundStyle(Color.sage500)
-            .disabled(isProcessingScan || title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(!canSave)
         }
     }
 
@@ -217,6 +227,12 @@ struct NewStoryView: View {
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.ink900)
                 .padding(.vertical, 8)
+
+            if !canSave && !isProcessingScan {
+                Text("Add a title or at least one STAR field to save.")
+                    .font(.caption)
+                    .foregroundStyle(Color.ink400)
+            }
 
             Divider()
         }
@@ -320,6 +336,8 @@ struct NewStoryView: View {
         }
         .buttonStyle(.plain)
         .disabled(isProcessingScan)
+        .accessibilityLabel("Scan handwritten note")
+        .accessibilityHint("Uses the camera to capture and extract text")
     }
 
     private var starSection: some View {
@@ -329,6 +347,7 @@ struct NewStoryView: View {
 
                 Image(systemName: "info.circle")
                     .foregroundStyle(Color.ink400)
+                    .accessibilityHidden(true)
             }
 
             StarFieldEditor(label: "Situation", symbol: "S", placeholder: "What was the context? Describe the background of the event.", text: $situation)
@@ -480,13 +499,15 @@ struct NewStoryView: View {
     }
 
     private func saveStory() {
+        guard canSave else { return }
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedTitle = trimmedTitle.isEmpty ? "Untitled Story" : trimmedTitle
         let normalizedTags = StoryStore.normalizeTags(Array(selectedTags))
         let tagList = StoryStore.sortedTags(normalizedTags)
         let resolvedCategory = tagList.first ?? (story?.category ?? "General")
 
         if let story {
-            story.title = trimmedTitle
+            story.title = resolvedTitle
             story.category = resolvedCategory
             story.tags = tagList
             story.situation = situation
@@ -496,7 +517,7 @@ struct NewStoryView: View {
             story.notes = mergedNotes()
             story.lastUpdated = Date()
         } else {
-            let newStory = Story(title: trimmedTitle, category: resolvedCategory, tags: tagList)
+            let newStory = Story(title: resolvedTitle, category: resolvedCategory)
             newStory.situation = situation
             newStory.task = task
             newStory.action = action

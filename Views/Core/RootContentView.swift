@@ -30,6 +30,7 @@ extension View {
 struct RootContentView: View {
     @State private var selectedTab: AppTab = .home
     @StateObject private var router = AppRouter()
+    @StateObject private var attemptsStore = AttemptsStore()
 
     @State private var isTabBarHidden: Bool = false
 
@@ -74,6 +75,7 @@ struct RootContentView: View {
             }
             .ignoresSafeArea(.keyboard)
             .environmentObject(router)
+            .environmentObject(attemptsStore)
         }
     }
 }

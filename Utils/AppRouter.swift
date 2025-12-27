@@ -7,4 +7,6 @@ final class AppRouter: ObservableObject {
 
     // NEW: hide floating tab bar on pushed screens
     @Published var isTabBarHidden: Bool = false
+
+    @Published var selectedJobID: UUID?
 }

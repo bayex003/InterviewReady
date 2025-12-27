@@ -1,10 +1,13 @@
 import SwiftUI
+import SwiftData
 
 struct PracticeSessionView: View {
     let questions: [QuestionBankItem]
     @ObservedObject var attemptsStore: AttemptsStore
 
     @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Story.lastUpdated, order: .reverse) private var stories: [Story]
+
     @State private var currentIndex = 0
     @State private var inputMode: InputMode = .speak
     @State private var isRecording = false
@@ -15,9 +18,11 @@ struct PracticeSessionView: View {
     @State private var completedQuestions: [QuestionBankItem] = []
     @State private var questionModes: [UUID: InputMode] = [:]
     @State private var notesByQuestionId: [UUID: String] = [:]
+    @State private var linkedStoryByQuestionId: [UUID: Story] = [:]
     @State private var summaryAttempts: [Attempt] = []
     @State private var summaryDurationSeconds = 0
     @State private var showSummary = false
+    @State private var showStoryPicker = false
 
     private var currentQuestion: QuestionBankItem {
         questions.indices.contains(currentIndex) ? questions[currentIndex] : .placeholder
@@ -65,6 +70,16 @@ struct PracticeSessionView: View {
                 onRetry: resetSession,
                 onExit: dismissToQuestionBank,
                 attemptsStore: attemptsStore
+            )
+        }
+        .sheet(isPresented: $showStoryPicker) {
+            StoryPickerSheet(
+                stories: stories,
+                selectedStoryId: linkedStoryByQuestionId[currentQuestion.id]?.id,
+                onSelect: { story in
+                    linkedStoryByQuestionId[currentQuestion.id] = story
+                    showStoryPicker = false
+                }
             )
         }
     }
@@ -208,37 +223,45 @@ struct PracticeSessionView: View {
     }
 
     private var linkedStoryCard: some View {
-        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(Color.sage100)
-                        .frame(width: 40, height: 40)
+        Button {
+            showStoryPicker = true
+        } label: {
+            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Color.sage100)
+                            .frame(width: 40, height: 40)
 
-                    Image(systemName: "link")
-                        .foregroundStyle(Color.sage500)
+                        Image(systemName: "link")
+                            .foregroundStyle(Color.sage500)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Linked Story")
+                            .font(.caption)
+                            .foregroundStyle(Color.ink500)
+
+                        Text(linkedStoryTitle)
+                            .font(.headline)
+                            .foregroundStyle(Color.ink900)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(Color.ink400)
                 }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Linked Story")
-                        .font(.caption)
-                        .foregroundStyle(Color.ink500)
-
-                    Text(linkedStoryTitle)
-                        .font(.headline)
-                        .foregroundStyle(Color.ink900)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .foregroundStyle(Color.ink400)
             }
         }
+        .buttonStyle(.plain)
     }
 
     private var linkedStoryTitle: String {
-        currentQuestion.linkedStories > 0 ? "Project Phoenix Crisis" : "Link a Story"
+        if let story = linkedStoryByQuestionId[currentQuestion.id] {
+            return story.title
+        }
+        return stories.isEmpty ? "No stories yet" : "Link a Story"
     }
 
     private var bottomControls: some View {
@@ -347,7 +370,7 @@ struct PracticeSessionView: View {
                 questionId: question.id,
                 questionText: question.text,
                 category: question.category.title,
-                linkedStoryId: nil,
+                linkedStoryId: linkedStoryByQuestionId[question.id]?.id,
                 notes: notesByQuestionId[question.id],
                 rating: nil
             )
@@ -365,6 +388,7 @@ struct PracticeSessionView: View {
         completedQuestions = []
         questionModes = [:]
         notesByQuestionId = [:]
+        linkedStoryByQuestionId = [:]
         summaryAttempts = []
         summaryDurationSeconds = 0
         showSummary = false
@@ -416,6 +440,59 @@ private struct WaveformView: View {
                 Capsule()
                     .fill(index == 3 ? Color.sage500 : Color.sage500.opacity(0.6))
                     .frame(width: 8, height: index == 3 ? 46 : 30)
+            }
+        }
+    }
+}
+
+private struct StoryPickerSheet: View {
+    let stories: [Story]
+    let selectedStoryId: UUID?
+    let onSelect: (Story) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if stories.isEmpty {
+                    ContentUnavailableView("No stories yet", systemImage: "book")
+                } else {
+                    ForEach(stories) { story in
+                        Button {
+                            onSelect(story)
+                        } label: {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(story.title)
+                                        .font(.headline)
+                                        .foregroundStyle(Color.ink900)
+
+                                    Text(story.category)
+                                        .font(.caption)
+                                        .foregroundStyle(Color.ink500)
+                                }
+
+                                Spacer()
+
+                                if selectedStoryId == story.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(Color.sage500)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .navigationTitle("Link Story")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
             }
         }
     }

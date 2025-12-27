@@ -1,15 +1,22 @@
 import SwiftUI
 
 struct QuestionsListView: View {
+    @EnvironmentObject private var attemptsStore: AttemptsStore
+
     @State private var searchText = ""
     @State private var selectedCategory: QuestionCategory = .all
     @State private var isSelecting = false
     @State private var selectedQuestionIDs: Set<UUID> = []
     @State private var showAddQuestion = false
     @State private var showPracticeSession = false
-    @StateObject private var attemptsStore = AttemptsStore()
 
-    private let questions = QuestionBankItem.sampleData
+    private var questions: [QuestionBankItem] {
+        QuestionBankItem.sampleData.map { question in
+            let answered = isQuestionAnswered(question)
+            let linkedStories = linkedStoryCount(for: question)
+            return question.with(answered: answered, linkedStories: linkedStories)
+        }
+    }
 
     private var filteredQuestions: [QuestionBankItem] {
         let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -197,6 +204,23 @@ struct QuestionsListView: View {
             selectedQuestionIDs.insert(question.id)
         }
     }
+
+    private func isQuestionAnswered(_ question: QuestionBankItem) -> Bool {
+        attemptsStore.attempts.contains { attempt in
+            attempt.questionId == question.id
+                || attempt.questionText.caseInsensitiveCompare(question.text) == .orderedSame
+        }
+    }
+
+    private func linkedStoryCount(for question: QuestionBankItem) -> Int {
+        let linkedStories = attemptsStore.attempts.compactMap { attempt -> UUID? in
+            guard attempt.questionId == question.id
+                    || attempt.questionText.caseInsensitiveCompare(question.text) == .orderedSame
+            else { return nil }
+            return attempt.linkedStoryId
+        }
+        return Set(linkedStories).count
+    }
 }
 
 private struct QuestionBankRow: View {
@@ -244,9 +268,9 @@ private struct QuestionBankRow: View {
                             .font(.subheadline)
                             .foregroundStyle(Color.sage500)
                         } else {
-                            Text("Unanswered")
+                            Text(question.isAnswered ? "Answered" : "Unanswered")
                                 .font(.subheadline)
-                                .foregroundStyle(Color.ink400)
+                                .foregroundStyle(question.isAnswered ? Color.sage500 : Color.ink400)
                         }
                     }
                 }
@@ -290,6 +314,18 @@ struct QuestionBankItem: Identifiable {
     let isAnswered: Bool
     let iconName: String
     let tags: [String]
+
+    func with(answered: Bool, linkedStories: Int) -> QuestionBankItem {
+        QuestionBankItem(
+            id: id,
+            text: text,
+            category: category,
+            linkedStories: linkedStories,
+            isAnswered: answered,
+            iconName: iconName,
+            tags: tags
+        )
+    }
 
     static let sampleData: [QuestionBankItem] = [
         QuestionBankItem(

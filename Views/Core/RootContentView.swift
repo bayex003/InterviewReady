@@ -4,8 +4,8 @@ import SwiftUI
 enum AppTab: Hashable, CaseIterable, Identifiable {
     case home
     case jobs
-    case questions
     case stories
+    case practice
 
     var id: Self { self }
 }
@@ -48,11 +48,11 @@ struct RootContentView: View {
                 JobsListView()
                     .tag(AppTab.jobs)
 
-                QuestionsListView()
-                    .tag(AppTab.questions)
-
                 StoriesListView()
                     .tag(AppTab.stories)
+
+                QuestionsListView()
+                    .tag(AppTab.practice)
             }
             .onPreferenceChange(FloatingTabBarHiddenPreferenceKey.self) { hidden in
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -69,4 +69,3 @@ struct RootContentView: View {
         }
     }
 }
-

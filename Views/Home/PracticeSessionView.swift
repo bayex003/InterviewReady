@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PracticeSessionView: View {
     let questions: [QuestionBankItem]
+    @ObservedObject var attemptsStore: AttemptsStore
 
     @Environment(\.dismiss) private var dismiss
     @State private var currentIndex = 0
@@ -10,6 +11,13 @@ struct PracticeSessionView: View {
     @State private var responseText = ""
     @State private var minutes = 1
     @State private var seconds = 45
+    @State private var sessionStart = Date()
+    @State private var completedQuestions: [QuestionBankItem] = []
+    @State private var questionModes: [UUID: InputMode] = [:]
+    @State private var notesByQuestionId: [UUID: String] = [:]
+    @State private var summaryAttempts: [Attempt] = []
+    @State private var summaryDurationSeconds = 0
+    @State private var showSummary = false
 
     private var currentQuestion: QuestionBankItem {
         questions.indices.contains(currentIndex) ? questions[currentIndex] : .placeholder
@@ -50,6 +58,15 @@ struct PracticeSessionView: View {
         }
         .background(Color.cream50.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
+        .navigationDestination(isPresented: $showSummary) {
+            SessionSummaryView(
+                attempts: summaryAttempts,
+                durationSeconds: summaryDurationSeconds,
+                onRetry: resetSession,
+                onExit: dismissToQuestionBank,
+                attemptsStore: attemptsStore
+            )
+        }
     }
 
     private var topBar: some View {
@@ -73,7 +90,7 @@ struct PracticeSessionView: View {
             Spacer()
 
             Button {
-                dismiss()
+                endSession()
             } label: {
                 Text("End")
                     .font(.subheadline.weight(.semibold))
@@ -288,14 +305,88 @@ struct PracticeSessionView: View {
     }
 
     private func advanceQuestion() {
-        guard currentIndex + 1 < questions.count else { return }
-        currentIndex += 1
+        recordCurrentQuestion()
+        if currentIndex + 1 < questions.count {
+            currentIndex += 1
+            responseText = ""
+            isRecording = false
+        } else {
+            endSession()
+        }
+    }
+
+    private func recordCurrentQuestion() {
+        let currentId = currentQuestion.id
+        guard !completedQuestions.contains(where: { $0.id == currentId }) else { return }
+        completedQuestions.append(currentQuestion)
+        questionModes[currentId] = inputMode
+
+        if inputMode == .write {
+            let trimmed = responseText.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                notesByQuestionId[currentId] = trimmed
+            }
+        }
+    }
+
+    private func endSession() {
+        recordCurrentQuestion()
+        let endDate = Date()
+        summaryDurationSeconds = max(Int(endDate.timeIntervalSince(sessionStart)), 0)
+        summaryAttempts = buildSummaryAttempts(timestamp: endDate)
+        showSummary = true
+    }
+
+    private func buildSummaryAttempts(timestamp: Date) -> [Attempt] {
+        let duration = minutes * 60 + seconds
+        return completedQuestions.map { question in
+            Attempt(
+                timestamp: timestamp,
+                durationSeconds: duration,
+                mode: questionModes[question.id]?.attemptMode ?? .speak,
+                questionId: question.id,
+                questionText: question.text,
+                category: question.category.title,
+                linkedStoryId: nil,
+                notes: notesByQuestionId[question.id],
+                rating: nil
+            )
+        }
+    }
+
+    private func resetSession() {
+        currentIndex = 0
+        inputMode = .speak
+        isRecording = false
+        responseText = ""
+        minutes = 1
+        seconds = 45
+        sessionStart = Date()
+        completedQuestions = []
+        questionModes = [:]
+        notesByQuestionId = [:]
+        summaryAttempts = []
+        summaryDurationSeconds = 0
+        showSummary = false
+    }
+
+    private func dismissToQuestionBank() {
+        dismiss()
     }
 }
 
 private enum InputMode {
     case speak
     case write
+
+    var attemptMode: AttemptMode {
+        switch self {
+        case .speak:
+            return .speak
+        case .write:
+            return .write
+        }
+    }
 }
 
 private struct TimerBlock: View {

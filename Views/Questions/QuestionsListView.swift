@@ -7,6 +7,7 @@ struct QuestionsListView: View {
     @State private var selectedQuestionIDs: Set<UUID> = []
     @State private var showAddQuestion = false
     @State private var showPracticeSession = false
+    @StateObject private var attemptsStore = AttemptsStore()
 
     private let questions = QuestionBankItem.sampleData
 
@@ -30,6 +31,8 @@ struct QuestionsListView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     titleRow
+
+                    attemptsShortcut
 
                     searchRow
 
@@ -64,7 +67,7 @@ struct QuestionsListView: View {
             AddQuestionPlaceholderView()
         }
         .navigationDestination(isPresented: $showPracticeSession) {
-            PracticeSessionView(questions: selectedQuestions)
+            PracticeSessionView(questions: selectedQuestions, attemptsStore: attemptsStore)
         }
         .safeAreaInset(edge: .bottom) {
             if isSelecting && !selectedQuestionIDs.isEmpty {
@@ -91,6 +94,42 @@ struct QuestionsListView: View {
                 Spacer()
             }
         }
+    }
+
+    private var attemptsShortcut: some View {
+        NavigationLink {
+            AttemptsListView(attemptsStore: attemptsStore)
+        } label: {
+            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.sage100)
+                            .frame(width: 44, height: 44)
+
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(Color.sage500)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Attempts")
+                            .font(.headline)
+                            .foregroundStyle(Color.ink900)
+
+                        Text("\(attemptsStore.attempts.count) saved in your history")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.ink500)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(Color.ink400)
+                }
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private var searchRow: some View {

@@ -1,7 +1,9 @@
 import SwiftUI
+import SwiftData
 
 struct AttemptsListView: View {
     @ObservedObject var attemptsStore: AttemptsStore
+    @Query private var stories: [Story]
 
     @State private var searchText = ""
     @State private var selectedFilter: AttemptFilter = .all
@@ -91,7 +93,10 @@ struct AttemptsListView: View {
                                 NavigationLink {
                                     AttemptDetailView(attempt: attempt, attemptsStore: attemptsStore)
                                 } label: {
-                                    AttemptRow(attempt: attempt)
+                                    AttemptRow(
+                                        attempt: attempt,
+                                        linkedStoryTitle: storyTitle(for: attempt)
+                                    )
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -133,10 +138,16 @@ struct AttemptsListView: View {
         formatter.dateStyle = .medium
         return formatter.string(from: date)
     }
+
+    private func storyTitle(for attempt: Attempt) -> String? {
+        guard let storyId = attempt.linkedStoryId else { return nil }
+        return stories.first(where: { $0.id == storyId })?.title
+    }
 }
 
 private struct AttemptRow: View {
     let attempt: Attempt
+    let linkedStoryTitle: String?
 
     var body: some View {
         CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
@@ -145,6 +156,13 @@ private struct AttemptRow: View {
                     .font(.headline)
                     .foregroundStyle(Color.ink900)
                     .lineLimit(2)
+
+                if let linkedStoryTitle {
+                    Text("Linked story: \(linkedStoryTitle)")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ink600)
+                        .lineLimit(1)
+                }
 
                 HStack(spacing: 8) {
                     Chip(title: attempt.mode.title, isSelected: true)

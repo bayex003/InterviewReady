@@ -12,6 +12,7 @@ struct JobsListView: View {
     @State private var linkSheet: JobSheetID?
     @State private var storiesSheet: JobSheetID?
     @State private var showPaywall = false
+    @State private var selectedJob: JobApplication?
 
     private var filteredJobs: [JobApplication] {
         let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -71,11 +72,28 @@ struct JobsListView: View {
             PaywallView()
                 .environmentObject(purchaseManager)
         }
+        .navigationDestination(item: $selectedJob) { job in
+            JobApplicationDetailView(
+                job: job,
+                onViewStories: {
+                    storiesSheet = JobSheetID(id: job.id)
+                },
+                onLinkStory: {
+                    handleLinkStory(for: job.id)
+                }
+            )
+        }
         .onChange(of: router.presentAddJob) { _, newValue in
             if newValue {
                 showAddApplication = true
                 router.presentAddJob = false
             }
+        }
+        .onChange(of: router.selectedJobID) { _, newValue in
+            guard let newValue,
+                  let job = jobsStore.jobs.first(where: { $0.id == newValue }) else { return }
+            selectedJob = job
+            router.selectedJobID = nil
         }
     }
 
@@ -146,6 +164,9 @@ struct JobsListView: View {
                     },
                     onLinkStory: {
                         handleLinkStory(for: job.id)
+                    },
+                    onSelect: {
+                        selectedJob = job
                     }
                 )
             }
@@ -201,6 +222,7 @@ private struct JobCardView: View {
     let job: JobApplication
     let onViewStories: () -> Void
     let onLinkStory: () -> Void
+    let onSelect: () -> Void
 
     private var formattedNextInterview: String? {
         guard let date = job.nextInterviewDate else { return nil }
@@ -284,6 +306,10 @@ private struct JobCardView: View {
                 }
             }
         }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onSelect()
+        }
     }
 
     private var viewStoriesTitle: String {
@@ -298,6 +324,137 @@ private struct JobCardView: View {
         formatter.dateFormat = "EEE, MMM d"
         return formatter
     }()
+}
+
+private struct JobApplicationDetailView: View {
+    let job: JobApplication
+    let onViewStories: () -> Void
+    let onLinkStory: () -> Void
+
+    private var locationText: String {
+        if let location = job.locationDetail, !location.isEmpty {
+            return location
+        }
+        return job.locationType.rawValue
+    }
+
+    private var linkedStoriesText: String {
+        if job.linkedStoryIDs.count == 1 {
+            return "1 story linked"
+        }
+        return "\(job.linkedStoryIDs.count) stories linked"
+    }
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 20) {
+                header
+                detailsSection
+                linkedStoriesSection
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
+        }
+        .background(Color.cream50.ignoresSafeArea())
+        .navigationTitle("Application")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(job.roleTitle)
+                .font(.title2.bold())
+                .foregroundStyle(Color.ink900)
+
+            Text(job.companyName)
+                .font(.subheadline)
+                .foregroundStyle(Color.ink600)
+        }
+    }
+
+    private var detailsSection: some View {
+        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Stage")
+                    .font(.caption)
+                    .foregroundStyle(Color.ink400)
+
+                Chip(title: job.stage.rawValue, isSelected: true)
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Location")
+                        .font(.caption)
+                        .foregroundStyle(Color.ink400)
+
+                    Text(locationText)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ink700)
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Applied")
+                        .font(.caption)
+                        .foregroundStyle(Color.ink400)
+
+                    Text(job.dateApplied, style: .date)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ink700)
+                }
+            }
+        }
+    }
+
+    private var linkedStoriesSection: some View {
+        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("Linked Stories")
+                        .font(.headline)
+                        .foregroundStyle(Color.ink900)
+
+                    Spacer()
+
+                    Text(linkedStoriesText)
+                        .font(.caption)
+                        .foregroundStyle(Color.ink500)
+                }
+
+                HStack(spacing: 12) {
+                    Button(action: onViewStories) {
+                        Label("View", systemImage: "book")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.sage500)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(Color.sage100)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(job.linkedStoryIDs.isEmpty)
+
+                    Button(action: onLinkStory) {
+                        Label("Link Story", systemImage: "paperclip")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.ink600)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(Color.surfaceWhite)
+                            .overlay(
+                                Capsule()
+                                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [5]))
+                                    .foregroundStyle(Color.ink200)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
 }
 
 private struct JobLogoView: View {

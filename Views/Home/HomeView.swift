@@ -5,13 +5,14 @@ struct HomeView: View {
     @Binding var selectedTab: AppTab
 
     @EnvironmentObject private var jobsStore: JobsStore
+    @EnvironmentObject private var attemptsStore: AttemptsStore
+    @EnvironmentObject private var router: AppRouter
 
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("hasCompletedNamePrompt_v1") private var hasCompletedNamePrompt: Bool = false
     @State private var showNameAlert = false
 
     @Query private var allStories: [Story]
-    @Query(filter: #Predicate<Question> { $0.isAnswered == true }) private var answeredQuestions: [Question]
 
     private let statCards: [HomeStat] = [
         HomeStat(title: "Applications", icon: "square.grid.2x2.fill"),
@@ -119,7 +120,7 @@ struct HomeView: View {
 
             HomeStatCard(
                 title: statCards[2].title,
-                value: "\(answeredQuestions.count)",
+                value: "\(attemptsStore.attempts.count)",
                 icon: statCards[2].icon
             )
         }
@@ -211,39 +212,54 @@ struct HomeView: View {
             SectionHeader(title: "Recent Applications")
 
             VStack(spacing: 12) {
-                ForEach(recentApplications) { application in
-                    Button {
-                        selectedTab = .jobs
-                    } label: {
-                        CardContainer(showShadow: false) {
-                            HStack(spacing: 12) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.sage100)
-                                        .frame(width: 44, height: 44)
+                if recentApplications.isEmpty {
+                    CardContainer(showShadow: false) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("No applications yet")
+                                .font(.headline)
+                                .foregroundStyle(Color.ink900)
 
-                                    Text(application.initials)
-                                        .font(.headline)
-                                        .foregroundStyle(Color.sage500)
-                                }
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(application.role)
-                                        .font(.headline)
-                                        .foregroundStyle(Color.ink900)
-
-                                    Text("\(application.company) • \(application.location)")
-                                        .font(.subheadline)
-                                        .foregroundStyle(Color.ink600)
-                                }
-
-                                Spacer()
-
-                                Chip(title: application.status, isSelected: true)
-                            }
+                            Text("Add an application to track your progress here.")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.ink500)
                         }
                     }
-                    .buttonStyle(.plain)
+                } else {
+                    ForEach(recentApplications) { application in
+                        Button {
+                            router.selectedJobID = application.id
+                            selectedTab = .jobs
+                        } label: {
+                            CardContainer(showShadow: false) {
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.sage100)
+                                            .frame(width: 44, height: 44)
+
+                                        Text(application.initials)
+                                            .font(.headline)
+                                            .foregroundStyle(Color.sage500)
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(application.roleTitle)
+                                            .font(.headline)
+                                            .foregroundStyle(Color.ink900)
+
+                                        Text("\(application.companyName) • \(application.locationDetail ?? application.locationType.rawValue)")
+                                            .font(.subheadline)
+                                            .foregroundStyle(Color.ink600)
+                                    }
+
+                                    Spacer()
+
+                                    Chip(title: application.stage.rawValue, isSelected: true)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
         }
@@ -270,19 +286,11 @@ struct HomeView: View {
         return letters.map { String($0) }.joined()
     }
 
-    private var recentApplications: [RecentApplication] {
-        if jobsStore.jobs.isEmpty {
-            return RecentApplication.placeholder
-        }
-
-        return jobsStore.jobs.prefix(3).map { job in
-            RecentApplication(
-                role: job.roleTitle,
-                company: job.companyName,
-                location: job.locationDetail ?? job.locationType.rawValue,
-                status: job.stage.rawValue
-            )
-        }
+    private var recentApplications: [JobApplication] {
+        jobsStore.jobs
+            .sorted { $0.dateApplied > $1.dateApplied }
+            .prefix(3)
+            .map { $0 }
     }
 }
 
@@ -323,22 +331,10 @@ private struct HomeStatCard: View {
     }
 }
 
-private struct RecentApplication: Identifiable {
-    let id = UUID()
-    let role: String
-    let company: String
-    let location: String
-    let status: String
-
+private extension JobApplication {
     var initials: String {
-        let parts = company.split(separator: " ")
+        let parts = companyName.split(separator: " ")
         let letters = parts.prefix(2).compactMap { $0.first }
         return letters.map { String($0) }.joined().uppercased()
     }
-
-    static let placeholder: [RecentApplication] = [
-        RecentApplication(role: "Product Manager", company: "TechCorp Inc.", location: "Remote", status: "Interviewing"),
-        RecentApplication(role: "Senior UX Designer", company: "CreativeStudio", location: "New York", status: "Applied"),
-        RecentApplication(role: "Frontend Developer", company: "FinGo", location: "London", status: "Reviewing")
-    ]
 }

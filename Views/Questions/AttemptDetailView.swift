@@ -1,10 +1,12 @@
 import SwiftUI
+import SwiftData
 
 struct AttemptDetailView: View {
     let attempt: Attempt
     @ObservedObject var attemptsStore: AttemptsStore
 
     @Environment(\.dismiss) private var dismiss
+    @Query private var stories: [Story]
     @State private var showDeleteConfirmation = false
 
     var body: some View {
@@ -88,9 +90,9 @@ struct AttemptDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Linked Story")
             CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
-                Text("Link a story")
+                Text(linkedStoryText)
                     .font(.subheadline)
-                    .foregroundStyle(Color.ink500)
+                    .foregroundStyle(linkedStoryText == "No linked story" ? Color.ink400 : Color.ink700)
             }
         }
     }
@@ -118,6 +120,11 @@ struct AttemptDetailView: View {
     private var notesText: String {
         let trimmed = attempt.notes?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? "No notes captured yet." : trimmed
+    }
+
+    private var linkedStoryText: String {
+        guard let linkedStoryId = attempt.linkedStoryId else { return "No linked story" }
+        return stories.first(where: { $0.id == linkedStoryId })?.title ?? "Linked story unavailable"
     }
 
     private var formattedDuration: String {

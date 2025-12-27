@@ -97,9 +97,8 @@ struct HomeView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
+        ScrollView {
+            VStack(spacing: 24) {
 
                     // HEADER
                     VStack(alignment: .leading, spacing: 4) {
@@ -362,63 +361,63 @@ struct HomeView: View {
                     Spacer(minLength: 100)
                 }
             }
-            .background(Color.cream50)
-            .navigationTitle("Home")
-            .navigationBarHidden(true)
-            .fullScreenCover(isPresented: $showDrill) {
-                PracticeSessionView()
-            }
-            .sheet(isPresented: $showAttemptHistory) {
-                AttemptHistoryView()
-            }
-            .sheet(isPresented: $showSettings) {
-                SettingsView()
-            }
-            .onAppear {
-                if !hasCompletedNamePrompt,
-                   userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                        if !hasCompletedNamePrompt,
-                           userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            showNameAlert = true
-                        }
+        }
+        .background(Color.cream50)
+        .navigationTitle("Home")
+        .navigationBarHidden(true)
+        .fullScreenCover(isPresented: $showDrill) {
+            PracticeSessionView()
+        }
+        .sheet(isPresented: $showAttemptHistory) {
+            AttemptHistoryView()
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+        }
+        .onAppear {
+            if !hasCompletedNamePrompt,
+               userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    if !hasCompletedNamePrompt,
+                       userName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        showNameAlert = true
                     }
                 }
             }
-            .alert("Welcome!", isPresented: $showNameAlert) {
-                TextField("Your Name", text: $userName)
+        }
+        .alert("Welcome!", isPresented: $showNameAlert) {
+            TextField("Your Name", text: $userName)
 
-                Button("Not now") {
-                    hasCompletedNamePrompt = true
-                }
-
-                Button("Save") {
-                    userName = userName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    hasCompletedNamePrompt = true
-                }
-            } message: {
-                Text("What should we call you?")
+            Button("Not now") {
+                hasCompletedNamePrompt = true
             }
+
+            Button("Save") {
+                userName = userName.trimmingCharacters(in: .whitespacesAndNewlines)
+                hasCompletedNamePrompt = true
+            }
+        } message: {
+            Text("What should we call you?")
+        }
 
 #if DEBUG
-            .alert("Reset Seed Data?", isPresented: $showResetSeedAlert) {
-                Button("Cancel", role: .cancel) {}
-                Button("Reset", role: .destructive) {
-                    DataSeeder.shared.resetSeedData(modelContext: modelContext)
-                    userName = ""
-                    hasCompletedNamePrompt = false
-                    showResetDoneAlert = true
-                }
-            } message: {
-                Text("This will delete Jobs, Questions, and Stories, then reseed from JSON.")
+        .alert("Reset Seed Data?", isPresented: $showResetSeedAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Reset", role: .destructive) {
+                DataSeeder.shared.resetSeedData(modelContext: modelContext)
+                userName = ""
+                hasCompletedNamePrompt = false
+                showResetDoneAlert = true
             }
-            .alert("Reset Complete", isPresented: $showResetDoneAlert) {
-                Button("OK") { }
-            } message: {
-                Text("Seed data has been reset and reloaded.")
-            }
-#endif
+        } message: {
+            Text("This will delete Jobs, Questions, and Stories, then reseed from JSON.")
         }
+        .alert("Reset Complete", isPresented: $showResetDoneAlert) {
+            Button("OK") { }
+        } message: {
+            Text("Seed data has been reset and reloaded.")
+        }
+#endif
     }
 
     var greeting: String {

@@ -41,66 +41,64 @@ struct QuestionsListView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                Picker("Filter", selection: $selectedFilter) {
-                    ForEach(QuestionFilter.allCases) { filter in
-                        Text(filter.rawValue).tag(filter)
+        VStack(spacing: 0) {
+            Picker("Filter", selection: $selectedFilter) {
+                ForEach(QuestionFilter.allCases) { filter in
+                    Text(filter.rawValue).tag(filter)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            .padding(.top, 12)
+
+            // Category Filter
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(categories, id: \.self) { cat in
+                        CategoryPill(category: cat, selectedCategory: selectedCategory) {
+                            selectedCategory = cat
+                        }
                     }
                 }
-                .pickerStyle(.segmented)
                 .padding(.horizontal)
-                .padding(.top, 12)
-
-                // Category Filter
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(categories, id: \.self) { cat in
-                            CategoryPill(category: cat, selectedCategory: selectedCategory) {
-                                selectedCategory = cat
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 12)
-                }
-                .background(Color.cream50)
-
-                // The List
-                List {
-                    ForEach(filteredAndSortedQuestions()) { question in
-                        NavigationLink(destination: QuestionDetailView(question: question)) {
-                            QuestionRow(question: question)
-                        }
-                        .listRowBackground(Color.surfaceWhite)
-                    }
-                }
-                .listStyle(.plain)
-                .safeAreaPadding(.bottom, 90) // prevents last row being covered by floating tab bar
-                .background(Color.cream50)
-
+                .padding(.vertical, 12)
             }
-            .navigationTitle("Questions")
-            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
             .background(Color.cream50)
-            .toolbar {
-                Button {
-                    if purchaseManager.isPro {
-                        showAddQuestion = true
-                    } else {
-                        showPaywall = true
+
+            // The List
+            List {
+                ForEach(filteredAndSortedQuestions()) { question in
+                    NavigationLink(destination: QuestionDetailView(question: question)) {
+                        QuestionRow(question: question)
                     }
-                } label: {
-                    Image(systemName: "plus")
+                    .listRowBackground(Color.surfaceWhite)
                 }
             }
-            .sheet(isPresented: $showAddQuestion) {
-                AddQuestionView()
+            .listStyle(.plain)
+            .safeAreaPadding(.bottom, 90) // prevents last row being covered by floating tab bar
+            .background(Color.cream50)
+
+        }
+        .navigationTitle("Questions")
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+        .background(Color.cream50)
+        .toolbar {
+            Button {
+                if purchaseManager.isPro {
+                    showAddQuestion = true
+                } else {
+                    showPaywall = true
+                }
+            } label: {
+                Image(systemName: "plus")
             }
-            .sheet(isPresented: $showPaywall) {
-                PaywallView()
-                    .environmentObject(purchaseManager)
-            }
+        }
+        .sheet(isPresented: $showAddQuestion) {
+            AddQuestionView()
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(purchaseManager)
         }
     }
 }

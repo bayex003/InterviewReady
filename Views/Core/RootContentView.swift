@@ -42,17 +42,25 @@ struct RootContentView: View {
             AppBackgroundView()
 
             TabView(selection: $selectedTab) {
-                HomeView(selectedTab: $selectedTab)
-                    .tag(AppTab.home)
+                NavigationStack {
+                    HomeView(selectedTab: $selectedTab)
+                }
+                .tag(AppTab.home)
 
-                JobsListView()
-                    .tag(AppTab.jobs)
+                NavigationStack {
+                    JobsListView()
+                }
+                .tag(AppTab.jobs)
 
-                StoriesListView()
-                    .tag(AppTab.stories)
+                NavigationStack {
+                    StoriesListView()
+                }
+                .tag(AppTab.stories)
 
-                QuestionsListView()
-                    .tag(AppTab.practice)
+                NavigationStack {
+                    QuestionsListView()
+                }
+                .tag(AppTab.practice)
             }
             .onPreferenceChange(FloatingTabBarHiddenPreferenceKey.self) { hidden in
                 withAnimation(.easeInOut(duration: 0.2)) {

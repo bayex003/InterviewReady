@@ -25,86 +25,84 @@ struct StoriesListView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.cream50.ignoresSafeArea()
+        ZStack {
+            Color.cream50.ignoresSafeArea()
 
-                if stories.isEmpty {
-                    // ACTIONABLE EMPTY STATE
-                    VStack(spacing: 16) {
-                        Image(systemName: "book.closed")
-                            .font(.system(size: 60))
-                            .foregroundStyle(Color.sage100)
+            if stories.isEmpty {
+                // ACTIONABLE EMPTY STATE
+                VStack(spacing: 16) {
+                    Image(systemName: "book.closed")
+                        .font(.system(size: 60))
+                        .foregroundStyle(Color.sage100)
 
-                        Text("No Stories Yet")
-                            .font(.headline)
-                            .foregroundStyle(Color.ink900)
+                    Text("No Stories Yet")
+                        .font(.headline)
+                        .foregroundStyle(Color.ink900)
 
-                        Text("Capture moments using STAR so you can reuse them in interviews.")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.ink600)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                    Text("Capture moments using STAR so you can reuse them in interviews.")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ink600)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
 
-                        Button {
-                            handleAddTapped()
-                        } label: {
-                            Text("Write a Story")
-                                .fontWeight(.bold)
-                                .padding()
-                                .padding(.horizontal, 12)
-                                .background(Color.sage500)
-                                .foregroundColor(.white)
-                                .clipShape(Capsule())
-                        }
-                        .padding(.top, 8)
-                    }
-
-                } else {
-                    // LIST (no accessory duplication)
-                    List {
-                        ForEach(filteredStories) { story in
-                            Button {
-                                selectedStory = story
-                            } label: {
-                                StoryRow(story: story)
-                            }
-                            .buttonStyle(.plain)
-                            .listRowBackground(Color.surfaceWhite)
-                        }
-                        .onDelete(perform: deleteStory)
-                    }
-                    .listStyle(.plain)
-                }
-            }
-            .navigationTitle("Stories")
-            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         handleAddTapped()
                     } label: {
-                        Image(systemName: "plus")
-                            .foregroundStyle(Color.ink900)
+                        Text("Write a Story")
+                            .fontWeight(.bold)
+                            .padding()
+                            .padding(.horizontal, 12)
+                            .background(Color.sage500)
+                            .foregroundColor(.white)
+                            .clipShape(Capsule())
                     }
+                    .padding(.top, 8)
                 }
+
+            } else {
+                // LIST (no accessory duplication)
+                List {
+                    ForEach(filteredStories) { story in
+                        Button {
+                            selectedStory = story
+                        } label: {
+                            StoryRow(story: story)
+                        }
+                        .buttonStyle(.plain)
+                        .listRowBackground(Color.surfaceWhite)
+                    }
+                    .onDelete(perform: deleteStory)
+                }
+                .listStyle(.plain)
             }
-            .sheet(isPresented: $showAddStory) {
-                AddStoryView()
-            }
-            .sheet(isPresented: $showPaywall) {
-                PaywallView()
-                    .environmentObject(purchaseManager)
-            }
-            .tapToDismissKeyboard()
-            .navigationDestination(item: $selectedStory) { story in
-                StoryDetailView(story: story)
-            }
-            .onChange(of: router.presentAddMoment) { _, newValue in
-                if newValue {
+        }
+        .navigationTitle("Stories")
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
                     handleAddTapped()
-                    router.presentAddMoment = false
+                } label: {
+                    Image(systemName: "plus")
+                        .foregroundStyle(Color.ink900)
                 }
+            }
+        }
+        .sheet(isPresented: $showAddStory) {
+            AddStoryView()
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(purchaseManager)
+        }
+        .tapToDismissKeyboard()
+        .navigationDestination(item: $selectedStory) { story in
+            StoryDetailView(story: story)
+        }
+        .onChange(of: router.presentAddMoment) { _, newValue in
+            if newValue {
+                handleAddTapped()
+                router.presentAddMoment = false
             }
         }
     }
@@ -130,4 +128,3 @@ struct StoriesListView: View {
         }
     }
 }
-

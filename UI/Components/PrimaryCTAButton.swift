@@ -7,7 +7,7 @@ struct PrimaryCTAButton: View {
 
     init(
         title: String,
-        systemImage: String? = "chevron.right",
+        systemImage: String? = nil,
         action: @escaping () -> Void
     ) {
         self.title = title
@@ -15,25 +15,34 @@ struct PrimaryCTAButton: View {
         self.action = action
     }
 
+    init(_ title: String, action: @escaping () -> Void) {
+        self.title = title
+        self.systemImage = nil
+        self.action = action
+    }
+
+    init(_ action: @escaping () -> Void) {
+        self.title = "Continue"
+        self.systemImage = nil
+        self.action = action
+    }
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Text(title)
-                    .fontWeight(.bold)
-
-                Spacer()
+                    .font(.headline.weight(.semibold))
 
                 if let systemImage {
                     Image(systemName: systemImage)
-                        .font(.headline)
+                        .font(.headline.weight(.semibold))
                 }
             }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 16)
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
             .background(Color.sage500)
-            .foregroundColor(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .foregroundStyle(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
     }

@@ -23,7 +23,7 @@ struct AddQuestionView: View {
 
     // Keep categories flexible; you can edit this list anytime
     private let categories = [
-        "General", "Basics", "Behavioral", "Technical",
+        "General", "Basics", "Behavioural", "Technical",
         "Leadership", "Conflict", "Challenge", "Success", "Failure"
     ]
 

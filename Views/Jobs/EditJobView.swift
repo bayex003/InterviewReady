@@ -88,9 +88,6 @@ struct EditJobView: View {
             }
         }
 
-        // ✅ KEY: hide the floating tab bar on this pushed screen
-        .hidesFloatingTabBar()
-
         // ✅ Optional: only dismiss keyboard when tapping outside inputs (doesn't break pickers)
         .scrollDismissesKeyboard(.interactively)
         .formKeyboardBehavior()
@@ -110,4 +107,3 @@ struct EditJobView: View {
         }
     }
 }
-

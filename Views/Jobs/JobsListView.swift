@@ -124,37 +124,14 @@ struct JobsListView: View {
     }
 
     private var emptyStateCard: some View {
-        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
-            VStack(alignment: .center, spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(Color.ink200)
-                        .frame(width: 64, height: 64)
-
-                    Image(systemName: "briefcase")
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundStyle(Color.ink500)
-                }
-
-                Text("Track a new application")
-                    .font(.headline)
-                    .foregroundStyle(Color.ink900)
-
-                Text("Keep all your opportunities in one place.")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.ink500)
-                    .multilineTextAlignment(.center)
-
-                PrimaryCTAButton(title: "Add application") {
-                    showAddJob = true
-                }
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 22)
-                .stroke(style: StrokeStyle(lineWidth: 1, dash: [6]))
-                .foregroundStyle(Color.ink200)
+        EmptyStateCard(
+            systemImage: "briefcase",
+            title: "Track a new application",
+            subtitle: "Keep all your opportunities in one place.",
+            ctaTitle: "Add application",
+            action: { showAddJob = true },
+            iconBackground: Color.ink200,
+            iconForeground: Color.ink500
         )
     }
 }

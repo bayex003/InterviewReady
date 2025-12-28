@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct JobDetailFormView: View {
+struct JobDetailView: View {
     @Bindable var job: Job
 
     var body: some View {
@@ -90,4 +90,3 @@ struct JobDetailFormView: View {
         .scrollDismissesKeyboard(.interactively)
     }
 }
-

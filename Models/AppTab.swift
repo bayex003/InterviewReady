@@ -5,7 +5,6 @@ enum AppTab: String, CaseIterable, Identifiable {
     case jobs
     case stories
     case practice
-    case settings
 
     var id: String { rawValue }
 
@@ -15,7 +14,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .jobs: return "Jobs"
         case .stories: return "Stories"
         case .practice: return "Practice"
-        case .settings: return "Settings"
         }
     }
 
@@ -25,7 +23,6 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .jobs: return "briefcase"
         case .stories: return "book.closed"
         case .practice: return "bubble.left.and.bubble.right"
-        case .settings: return "gearshape"
         }
     }
 }

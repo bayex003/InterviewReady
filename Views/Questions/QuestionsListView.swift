@@ -181,12 +181,26 @@ struct QuestionsListView: View {
                 }
             } else {
                 ForEach(filteredQuestions) { q in
-                    QuestionRowView(
-                        question: q,
-                        isSelecting: isSelecting,
-                        isSelected: selectedQuestionIDs.contains(q.id)
-                    ) {
-                        toggleSelection(for: q)
+                    if isSelecting {
+                        QuestionRowView(
+                            question: q,
+                            isSelecting: isSelecting,
+                            isSelected: selectedQuestionIDs.contains(q.id)
+                        ) {
+                            toggleSelection(for: q)
+                        }
+                    } else {
+                        NavigationLink {
+                            QuestionDetailView(question: q)
+                        } label: {
+                            QuestionRowView(
+                                question: q,
+                                isSelecting: false,
+                                isSelected: false,
+                                onTap: {}
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }

@@ -6,23 +6,27 @@ struct PracticeSessionView: View {
     @ObservedObject var attemptsStore: AttemptsStore
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Story.lastUpdated, order: .reverse) private var stories: [Story]
 
     @State private var currentIndex = 0
     @State private var inputMode: InputMode = .speak
-    @State private var isRecording = false
+    @State private var isPaused = false
     @State private var responseText = ""
     @State private var minutes = 1
     @State private var seconds = 45
     @State private var sessionStart = Date()
     @State private var completedQuestions: [QuestionBankItem] = []
     @State private var questionModes: [UUID: InputMode] = [:]
-    @State private var notesByQuestionId: [UUID: String] = [:]
+    @State private var draftsByQuestionId: [UUID: String] = [:]
     @State private var linkedStoryByQuestionId: [UUID: Story] = [:]
     @State private var summaryAttempts: [Attempt] = []
     @State private var summaryDurationSeconds = 0
     @State private var showSummary = false
     @State private var showStoryPicker = false
+    @State private var savedQuestionId: UUID?
+    @State private var lastSavedAttemptByQuestionId: [UUID: PracticeAttempt] = [:]
+    @State private var selectedAttempt: PracticeAttempt?
 
     private var currentQuestion: QuestionBankItem {
         questions.indices.contains(currentIndex) ? questions[currentIndex] : .empty
@@ -57,13 +61,13 @@ struct PracticeSessionView: View {
                 .padding(.bottom, 32)
             }
             .tapToDismissKeyboard()
-
-            bottomControls
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
         }
         .background(Color.cream50.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
+        .safeAreaInset(edge: .bottom) {
+            actionBar
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .navigationDestination(isPresented: $showSummary) {
             SessionSummaryView(
                 attempts: summaryAttempts,
@@ -82,6 +86,21 @@ struct PracticeSessionView: View {
                     showStoryPicker = false
                 }
             )
+        }
+        .sheet(item: $selectedAttempt) { attempt in
+            AnswerDetailView(attempt: attempt)
+        }
+        .onChange(of: currentIndex) { _, _ in
+            loadDraftForCurrentQuestion()
+        }
+        .onChange(of: responseText) { _, newValue in
+            draftsByQuestionId[currentQuestion.id] = newValue
+            if savedQuestionId == currentQuestion.id {
+                savedQuestionId = nil
+            }
+        }
+        .onChange(of: inputMode) { _, newValue in
+            questionModes[currentQuestion.id] = newValue
         }
     }
 
@@ -215,9 +234,43 @@ struct PracticeSessionView: View {
                     WaveformView()
                         .frame(height: 60)
 
-                    Text("Listening…")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ink500)
+                    DictationButton(text: $responseText)
+                        .disabled(isPaused)
+
+                    if isPaused {
+                        Text("Paused")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.ink500)
+                    } else {
+                        Text("Tap the mic to record your answer.")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.ink500)
+                    }
+
+                    ZStack(alignment: .topLeading) {
+                        if responseText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text("Transcript will appear here.")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.ink400)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
+                                .allowsHitTesting(false)
+                        }
+
+                        TextEditor(text: $responseText)
+                            .font(.body)
+                            .foregroundStyle(Color.ink900)
+                            .scrollContentBackground(.hidden)
+                            .padding(12)
+                            .frame(minHeight: 140)
+                            .disabled(isPaused)
+                    }
+                    .background(Color.surfaceWhite)
+                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.ink200, lineWidth: 1)
+                    )
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
@@ -231,6 +284,7 @@ struct PracticeSessionView: View {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .stroke(Color.ink200, lineWidth: 1)
                     )
+                    .disabled(isPaused)
             }
         }
     }
@@ -282,82 +336,105 @@ struct PracticeSessionView: View {
         return stories.isEmpty ? "No stories yet" : "Link a Story"
     }
 
-    private var bottomControls: some View {
-        HStack(alignment: .bottom) {
-            Button {
-                advanceQuestion()
-            } label: {
-                VStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.surfaceWhite)
-                        .frame(width: 44, height: 44)
-                        .overlay(
-                            Image(systemName: "forward.fill")
-                                .foregroundStyle(Color.ink600)
-                                .rotationEffect(.degrees(180))
-                        )
+    private var actionBar: some View {
+        VStack(spacing: 12) {
+            if savedQuestionId == currentQuestion.id {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.sage500)
 
-                    Text("Skip")
-                        .font(.caption)
-                        .foregroundStyle(Color.ink600)
+                    Text("Saved to your history.")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ink700)
+
+                    Spacer()
+
+                    Button("Edit saved answer") {
+                        if let attempt = lastSavedAttemptByQuestionId[currentQuestion.id] {
+                            selectedAttempt = attempt
+                        }
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.sage500)
+                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 20)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Skip question")
 
-            Spacer()
-
-            Button {
-                isRecording.toggle()
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(isRecording ? Color.sage500 : Color.sage100)
-                        .frame(width: 86, height: 86)
-                        .shadow(color: Color.sage500.opacity(isRecording ? 0.35 : 0.15), radius: 18)
-
-                    Image(systemName: isRecording ? "stop.fill" : "mic.fill")
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(isRecording ? Color.surfaceWhite : Color.sage500)
+            HStack(spacing: 12) {
+                controlButton(
+                    title: "Previous",
+                    systemImage: "chevron.left"
+                ) {
+                    goToPreviousQuestion()
                 }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(isRecording ? "Stop recording" : "Start recording")
-            .accessibilityHint("Toggles recording for your response")
+                .disabled(currentIndex == 0)
+                .opacity(currentIndex == 0 ? 0.5 : 1)
 
-            Spacer()
-
-            Button {
-                advanceQuestion()
-            } label: {
-                VStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.surfaceWhite)
-                        .frame(width: 44, height: 44)
-                        .overlay(
-                            Image(systemName: "forward.fill")
-                                .foregroundStyle(Color.ink600)
-                        )
-
-                    Text("Next")
-                        .font(.caption)
-                        .foregroundStyle(Color.ink600)
+                controlButton(
+                    title: isPaused ? "Play" : "Pause",
+                    systemImage: isPaused ? "play.fill" : "pause.fill"
+                ) {
+                    togglePause()
                 }
+
+                controlButton(
+                    title: "Next",
+                    systemImage: "chevron.right"
+                ) {
+                    goToNextQuestion()
+                }
+                .disabled(currentIndex >= questions.count - 1)
+                .opacity(currentIndex >= questions.count - 1 ? 0.5 : 1)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Next question")
+            .padding(.horizontal, 20)
+
+            HStack(spacing: 12) {
+                SecondaryActionButton(title: "Start again") {
+                    startAgain()
+                }
+
+                PrimaryCTAButton(title: "Save answer", systemImage: "tray.and.arrow.down") {
+                    saveCurrentAnswer()
+                }
+                .disabled(currentAnswerTrimmed.isEmpty)
+                .opacity(currentAnswerTrimmed.isEmpty ? 0.6 : 1)
+            }
+            .padding(.horizontal, 20)
         }
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+        .background(Color.cream50)
+        .overlay(
+            Divider()
+                .opacity(0.4),
+            alignment: .top
+        )
     }
 
-    private func advanceQuestion() {
-        recordCurrentQuestion()
-        if currentIndex + 1 < questions.count {
-            currentIndex += 1
-            responseText = ""
-            isRecording = false
-        } else {
-            endSession()
+    private func controlButton(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.subheadline.weight(.semibold))
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+            }
+            .foregroundStyle(Color.ink700)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity)
+            .background(Color.surfaceWhite)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.ink200, lineWidth: 1)
+            )
         }
+        .buttonStyle(.plain)
+    }
+
+    private var currentAnswerTrimmed: String {
+        responseText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func recordCurrentQuestion() {
@@ -366,11 +443,9 @@ struct PracticeSessionView: View {
         completedQuestions.append(currentQuestion)
         questionModes[currentId] = inputMode
 
-        if inputMode == .write {
-            let trimmed = responseText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty {
-                notesByQuestionId[currentId] = trimmed
-            }
+        let trimmed = draftsByQuestionId[currentId]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmed.isEmpty {
+            draftsByQuestionId[currentId] = trimmed
         }
     }
 
@@ -393,7 +468,7 @@ struct PracticeSessionView: View {
                 questionText: question.text,
                 category: question.category.title,
                 linkedStoryId: linkedStoryByQuestionId[question.id]?.id,
-                notes: notesByQuestionId[question.id],
+                notes: draftsByQuestionId[question.id],
                 rating: nil
             )
         }
@@ -402,22 +477,81 @@ struct PracticeSessionView: View {
     private func resetSession() {
         currentIndex = 0
         inputMode = .speak
-        isRecording = false
+        isPaused = false
         responseText = ""
         minutes = 1
         seconds = 45
         sessionStart = Date()
         completedQuestions = []
         questionModes = [:]
-        notesByQuestionId = [:]
+        draftsByQuestionId = [:]
         linkedStoryByQuestionId = [:]
         summaryAttempts = []
         summaryDurationSeconds = 0
         showSummary = false
+        savedQuestionId = nil
+        lastSavedAttemptByQuestionId = [:]
     }
 
     private func dismissToQuestionBank() {
         dismiss()
+    }
+
+    private func goToPreviousQuestion() {
+        storeCurrentDraft()
+        guard currentIndex > 0 else { return }
+        currentIndex -= 1
+        isPaused = false
+    }
+
+    private func goToNextQuestion() {
+        storeCurrentDraft()
+        guard currentIndex + 1 < questions.count else { return }
+        currentIndex += 1
+        isPaused = false
+    }
+
+    private func storeCurrentDraft() {
+        draftsByQuestionId[currentQuestion.id] = responseText
+        questionModes[currentQuestion.id] = inputMode
+    }
+
+    private func loadDraftForCurrentQuestion() {
+        responseText = draftsByQuestionId[currentQuestion.id] ?? ""
+        if let mode = questionModes[currentQuestion.id] {
+            inputMode = mode
+        }
+    }
+
+    private func saveCurrentAnswer() {
+        let trimmed = currentAnswerTrimmed
+        guard !trimmed.isEmpty else { return }
+
+        let attempt = PracticeAttempt(
+            source: "drill",
+            questionTextSnapshot: currentQuestion.text,
+            questionId: currentQuestion.id,
+            durationSeconds: minutes * 60 + seconds,
+            notes: trimmed,
+            audioPath: nil
+        )
+
+        modelContext.insert(attempt)
+        try? modelContext.save()
+
+        draftsByQuestionId[currentQuestion.id] = trimmed
+        savedQuestionId = currentQuestion.id
+        lastSavedAttemptByQuestionId[currentQuestion.id] = attempt
+    }
+
+    private func startAgain() {
+        responseText = ""
+        draftsByQuestionId[currentQuestion.id] = ""
+        savedQuestionId = nil
+    }
+
+    private func togglePause() {
+        isPaused.toggle()
     }
 }
 
@@ -464,6 +598,28 @@ private struct WaveformView: View {
                     .frame(width: 8, height: index == 3 ? 46 : 30)
             }
         }
+    }
+}
+
+private struct SecondaryActionButton: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.ink700)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.surfaceWhite)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.ink200, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -530,4 +686,3 @@ extension QuestionBankItem {
         )
     }
 }
-

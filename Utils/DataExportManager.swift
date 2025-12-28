@@ -107,6 +107,7 @@ final class DataExportManager {
                         "linked_story_id",
                         "linked_story_title",
                         "notes_or_transcript",
+                        "audio_path",
                         "rating"
                     ]
 
@@ -127,6 +128,7 @@ final class DataExportManager {
                             "",
                             "",
                             attempt.notes ?? "",
+                            attempt.audioPath ?? "",
                             rating
                         ]
                     }
@@ -366,6 +368,7 @@ final class DataExportManager {
             output.append("Category: \(question?.category ?? "None")")
             output.append("Linked Story: None")
             output.append("Notes or Transcript: \(attempt.notes ?? "None")")
+            output.append("Audio Path: \(attempt.audioPath ?? "None")")
             output.append("Rating: \(attempt.confidence.map(String.init) ?? "None")")
             output.append("")
         }
@@ -419,4 +422,3 @@ final class DataExportManager {
         return needsQuotes ? "\"\(escapedValue)\"" : escapedValue
     }
 }
-

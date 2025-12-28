@@ -121,11 +121,15 @@ struct NewStoryView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
-            .safeAreaPadding(.bottom, 24)
+            .padding(.bottom, 140)
         }
         .tapToDismissKeyboard()
         .navigationTitle(isEditing ? "Edit Story" : "New Story")
         .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            actionBar
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button(isEditing ? "Back" : "Cancel") { dismiss() }
@@ -214,6 +218,48 @@ struct NewStoryView: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+    }
+
+    private var actionBar: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                Button(isEditing ? "Back" : "Cancel") {
+                    dismiss()
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.ink600)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.surfaceWhite)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.ink200, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .buttonStyle(.plain)
+
+                Button("Save") {
+                    saveStory()
+                }
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(Color.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.sage500.opacity(canSave ? 1 : 0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .buttonStyle(.plain)
+                .disabled(!canSave)
+            }
+            .padding(.horizontal, 20)
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+        .background(Color.cream50)
+        .overlay(
+            Divider()
+                .opacity(0.4),
+            alignment: .top
+        )
     }
 
     private var titleSection: some View {
@@ -555,6 +601,7 @@ struct NewStoryView: View {
             modelContext.insert(newStory)
         }
 
+        AnalyticsEventLogger.shared.log(.storySaved)
         dismiss()
     }
 
@@ -699,5 +746,4 @@ private struct SuggestedTagChip: View {
         .accessibilityLabel(title)
     }
 }
-
 

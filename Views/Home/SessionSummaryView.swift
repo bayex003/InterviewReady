@@ -5,16 +5,15 @@ import SwiftUI
 /// (No SectionHeader / PrimaryCTAButton / Chip / CardContainer usage.)
 struct SessionSummaryView: View {
     let attempts: [Attempt]
+    let savedAttempts: [PracticeAttempt]
     let durationSeconds: Int
     let onRetry: () -> Void
     let onExit: () -> Void
 
-    @ObservedObject var attemptsStore: AttemptsStore
-
     @AppStorage("savedSessionCount") private var savedSessionCount = 0
 
-    @State private var hasSaved = false
-    @State private var showAttemptsList = false
+    @State private var showSavedAnswers = false
+    @State private var trackedSession = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -33,8 +32,13 @@ struct SessionSummaryView: View {
         }
         .background(Color.cream50.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
-        .navigationDestination(isPresented: $showAttemptsList) {
-            AttemptsListDestinationView(attemptsStore: attemptsStore)
+        .navigationDestination(isPresented: $showSavedAnswers) {
+            SessionAnswersListView(attempts: savedAttempts)
+        }
+        .onAppear {
+            guard !trackedSession else { return }
+            savedSessionCount += 1
+            trackedSession = true
         }
     }
 
@@ -44,7 +48,7 @@ struct SessionSummaryView: View {
                 .font(.largeTitle.bold())
                 .foregroundStyle(Color.ink900)
 
-            Text("Here’s how this round of practice went.")
+            Text("Here’s how this round of practise went.")
                 .font(.subheadline)
                 .foregroundStyle(Color.ink500)
         }
@@ -58,8 +62,8 @@ struct SessionSummaryView: View {
 
             HStack(spacing: 12) {
                 statCard(title: "Questions", value: "\(attempts.count)")
+                statCard(title: "Answers Saved", value: "\(savedAttempts.count)")
                 statCard(title: "Duration", value: formattedDuration(durationSeconds))
-                statCard(title: "Mode", value: modeSummary)
             }
         }
     }
@@ -108,13 +112,13 @@ struct SessionSummaryView: View {
 
     private var actionsSection: some View {
         VStack(spacing: 12) {
-            primaryButton(title: hasSaved ? "Attempts Saved" : "Save Attempt(s)", isDisabled: hasSaved) {
-                saveAttempts()
+            primaryButton(title: "Review answers", isDisabled: savedAttempts.isEmpty) {
+                showSavedAnswers = true
             }
 
             HStack(spacing: 12) {
-                secondaryButton(title: "Retry Session", action: onRetry)
-                secondaryButton(title: "Back to Question Bank", action: onExit)
+                secondaryButton(title: "Start another drill", action: onRetry)
+                secondaryButton(title: "Back to questions", action: onExit)
             }
         }
     }
@@ -150,23 +154,7 @@ struct SessionSummaryView: View {
         .buttonStyle(.plain)
     }
 
-    private func saveAttempts() {
-        guard !hasSaved else { return }
-        attemptsStore.add(attempts)
-        hasSaved = true
-        savedSessionCount += 1
-        showAttemptsList = true
-    }
-
     // MARK: - Helpers
-
-    private var modeSummary: String {
-        let uniqueModes = Set(attempts.map { $0.mode })
-        if uniqueModes.count == 1 {
-            return uniqueModes.first?.title ?? "Mixed"
-        }
-        return "Mixed"
-    }
 
     private func formattedDuration(_ seconds: Int) -> String {
         let minutes = seconds / 60
@@ -187,12 +175,52 @@ struct SessionSummaryView: View {
 
 // MARK: - Destination
 
-struct AttemptsListDestinationView: View {
-    @ObservedObject var attemptsStore: AttemptsStore
+struct SessionAnswersListView: View {
+    let attempts: [PracticeAttempt]
 
     var body: some View {
-        AttemptsListView()
-            .environmentObject(attemptsStore)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Saved answers")
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(Color.ink900)
+
+                if attempts.isEmpty {
+                    SummaryCard {
+                        Text("No answers saved yet.")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.ink500)
+                    }
+                } else {
+                    VStack(spacing: 12) {
+                        ForEach(attempts) { attempt in
+                            NavigationLink {
+                                AnswerDetailView(attempt: attempt)
+                            } label: {
+                                SummaryCard {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(attempt.questionTextSnapshot)
+                                            .font(.headline)
+                                            .foregroundStyle(Color.ink900)
+                                            .lineLimit(2)
+
+                                        Text(DateFormatters.mediumDateTime.string(from: attempt.createdAt))
+                                            .font(.caption)
+                                            .foregroundStyle(Color.ink500)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
+        }
+        .background(Color.cream50.ignoresSafeArea())
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -234,4 +262,3 @@ private struct SummaryPill: View {
             )
     }
 }
-

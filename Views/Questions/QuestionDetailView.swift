@@ -21,6 +21,8 @@ struct QuestionDetailView: View {
     @State private var showExample = false
     @State private var didEditThisSession = false
     @State private var showDeleteConfirmation = false
+    @State private var showPracticeSession = false
+    @State private var selectedAnswerFilter: AnswerFilter = .all
 
     private let categories = ["General", "Basics", "Behavioral", "Technical", "Strengths", "Weaknesses"]
 
@@ -56,6 +58,20 @@ struct QuestionDetailView: View {
                 question.updatedAt = Date()
             }
         )
+    }
+
+    private var savedAttemptsForQuestion: [PracticeAttempt] {
+        let attemptsForQuestion = allAttempts.filter {
+            ($0.questionId == question.id) || ($0.questionTextSnapshot == question.text)
+        }
+        return attemptsForQuestion.filter {
+            let hasText = ($0.notes ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            return hasText || $0.audioPath != nil
+        }
+    }
+
+    private var hasAudioAnswers: Bool {
+        savedAttemptsForQuestion.contains { $0.audioPath != nil }
     }
 
     var body: some View {
@@ -116,6 +132,12 @@ struct QuestionDetailView: View {
                 .background(Color.surfaceWhite)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
+
+                PrimaryCTAButton(title: "Practise this question", systemImage: "play.fill") {
+                    AnalyticsEventLogger.shared.log(.questionPractiseTapped)
+                    AnalyticsEventLogger.shared.log(.drillStartedSelected)
+                    showPracticeSession = true
+                }
 
                 savedAnswersSection
 
@@ -259,6 +281,14 @@ struct QuestionDetailView: View {
         } message: {
             Text("This will remove your custom question permanently.")
         }
+        .sheet(isPresented: $showPracticeSession) {
+            PracticeSessionView(questions: [QuestionBankItem(question)])
+        }
+        .onChange(of: hasAudioAnswers) { _, newValue in
+            if !newValue {
+                selectedAnswerFilter = .all
+            }
+        }
     }
 
     private func deleteQuestion() {
@@ -275,29 +305,47 @@ struct QuestionDetailView: View {
                 .foregroundStyle(Color.ink600)
                 .padding(.leading, 4)
 
-            let attemptsForQuestion = allAttempts.filter {
-                ($0.questionId == question.id) || ($0.questionTextSnapshot == question.text)
-            }
-            let savedAttempts = attemptsForQuestion.filter {
-                let hasText = ($0.notes ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-                return hasText || $0.audioPath != nil
+            let filteredAttempts = savedAttemptsForQuestion.filter { attempt in
+                switch selectedAnswerFilter {
+                case .all:
+                    return true
+                case .audioOnly:
+                    return attempt.audioPath != nil
+                }
             }
 
-            if savedAttempts.isEmpty {
+            if hasAudioAnswers {
+                Picker("Answer filter", selection: $selectedAnswerFilter) {
+                    ForEach(AnswerFilter.allCases) { filter in
+                        Text(filter.title).tag(filter)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
+
+            if savedAttemptsForQuestion.isEmpty {
                 CardContainer(showShadow: false) {
-                    Text("No saved answers yet.")
+                    Text("No answers yet — Practise this question to add one.")
                         .font(.subheadline)
                         .foregroundStyle(Color.ink500)
                 }
             } else {
                 VStack(spacing: 12) {
-                    ForEach(savedAttempts, id: \.id) { attempt in
-                        NavigationLink {
-                            AnswerDetailView(attempt: attempt)
-                        } label: {
-                            savedAnswerRow(attempt)
+                    if filteredAttempts.isEmpty {
+                        CardContainer(showShadow: false) {
+                            Text("No audio answers yet.")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.ink500)
                         }
-                        .buttonStyle(.plain)
+                    } else {
+                        ForEach(filteredAttempts, id: \.id) { attempt in
+                            NavigationLink {
+                                AnswerDetailView(attempt: attempt)
+                            } label: {
+                                savedAnswerRow(attempt)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
             }
@@ -393,4 +441,13 @@ private struct DisclosureCard<Content: View>: View {
         // ✅ This is the key: animate the whole card’s layout changes
         .animation(.snappy(duration: 0.28), value: isExpanded)
     }
+}
+
+private enum AnswerFilter: String, CaseIterable, Identifiable {
+    case all = "All answers"
+    case audioOnly = "Audio only"
+
+    var id: String { rawValue }
+
+    var title: String { rawValue }
 }

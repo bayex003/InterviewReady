@@ -90,6 +90,7 @@ struct AnswerDetailView: View {
         VStack(spacing: 12) {
             if let audioPath = attempt.audioPath {
                 Button {
+                    AnalyticsEventLogger.shared.log(.answerPlaybackStarted)
                     audioService.playRecording(from: audioPath)
                 } label: {
                     HStack(spacing: 8) {

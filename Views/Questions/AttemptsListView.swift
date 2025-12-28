@@ -81,11 +81,11 @@ struct AttemptsListView: View {
                             .font(.headline)
                             .foregroundStyle(Color.ink900)
 
-                        Text("Save a session summary to keep your practice history here.")
+                        Text("Save a session summary to keep your practise history here.")
                             .font(.subheadline)
                             .foregroundStyle(Color.ink500)
 
-                        PrimaryCTAButton(title: "Start practicing") {
+                        PrimaryCTAButton(title: "Start practising") {
                             dismiss()
                         }
                     }

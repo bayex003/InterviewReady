@@ -101,7 +101,7 @@ struct SettingsView: View {
                 resetApp()
             }
         } message: {
-            Text("This will permanently delete your jobs, stories, questions, and practice attempts. This action cannot be undone.")
+            Text("This will permanently delete your jobs, stories, questions, and practise attempts. This action cannot be undone.")
         }
         .alert("Data Cleared", isPresented: $showResetSuccess) {
             Button("OK", role: .cancel) { }
@@ -133,7 +133,7 @@ struct SettingsView: View {
                 }
             }
         } message: {
-            Text("InterviewReady can send a daily practice reminder at your chosen time.")
+            Text("InterviewReady can send a daily practise reminder at your chosen time.")
         }
     }
 
@@ -175,7 +175,7 @@ struct SettingsView: View {
                                 .font(.headline)
                                 .foregroundStyle(Color.ink900)
 
-                            Text("Get unlimited practice questions, AI feedback, and export your career stories.")
+                            Text("Get unlimited practise questions, export your career stories, and sync across devices.")
                                 .font(.subheadline)
                                 .foregroundStyle(Color.ink600)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -280,6 +280,20 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.plain)
 
+#if DEBUG
+                    Divider().opacity(0.6)
+
+                    Button {
+                        exportAnalyticsLog()
+                    } label: {
+                        SettingsRow(icon: "waveform.path.ecg", title: "Export Analytics Log") {
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(Color.ink400)
+                        }
+                    }
+                    .buttonStyle(.plain)
+#endif
+
                     Divider().opacity(0.6)
 
                     Button(role: .destructive) {
@@ -346,7 +360,7 @@ struct SettingsView: View {
 
             // ✅ Fetch in small, separate calls (prevents type-checker meltdown)
             let stories = try fetchStoriesIfNeeded()
-            let (questions, questionById) = try fetchQuestionsIfNeeded()
+            let questions = try fetchQuestionsIfNeeded()
             let attempts = try fetchAttemptsIfNeeded()
             let jobs = try fetchJobsIfNeeded()
 
@@ -354,7 +368,6 @@ struct SettingsView: View {
                 exportDirectory: exportDirectory,
                 stories: stories,
                 questions: questions,
-                questionById: questionById,
                 attempts: attempts,
                 jobs: jobs
             )
@@ -369,6 +382,16 @@ struct SettingsView: View {
             showShareSheet = true
         } catch {
             print("Export failed: \(error)")
+            showExportErrorAlert = true
+        }
+    }
+
+    private func exportAnalyticsLog() {
+        do {
+            let url = try AnalyticsEventLogger.shared.exportLogFile()
+            shareItems = [url]
+            showShareSheet = true
+        } catch {
             showExportErrorAlert = true
         }
     }
@@ -392,15 +415,14 @@ struct SettingsView: View {
     }
 
     @MainActor
-    private func fetchQuestionsIfNeeded() throws -> (questions: [Question], questionById: [UUID: Question]) {
+    private func fetchQuestionsIfNeeded() throws -> [Question] {
         guard exportSelection.includeQuestions || exportSelection.includeAttempts else {
-            return ([], [:])
+            return []
         }
         let questions = try modelContext.fetch(
             FetchDescriptor<Question>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
         )
-        let questionById = Dictionary(uniqueKeysWithValues: questions.map { ($0.id, $0) })
-        return (questions, questionById)
+        return questions
     }
 
     @MainActor
@@ -424,7 +446,6 @@ struct SettingsView: View {
         exportDirectory: URL,
         stories: [Story],
         questions: [Question],
-        questionById: [UUID: Question],
         attempts: [PracticeAttempt],
         jobs: [Job]
     ) throws -> [URL] {
@@ -454,19 +475,15 @@ struct SettingsView: View {
             }
 
             if exportSelection.includeAttempts {
-                let headers = ["attempt_id","timestamp","duration_seconds","mode","question_id","question_text","category","notes_or_transcript","rating"]
+                let headers = ["question_id","question_text_snapshot","answer_text","created_at","duration_seconds","has_audio"]
                 let rows = attempts.map { a in
-                    let q = a.questionId.flatMap { questionById[$0] }
                     return [
-                        String(describing: a.id),
-                        isoString(a.createdAt),
-                        a.durationSeconds.map(String.init) ?? "",
-                        a.source,
                         a.questionId.map { String(describing: $0) } ?? "",
                         a.questionTextSnapshot,
-                        q?.category ?? "",
                         a.notes ?? "",
-                        a.confidence.map(String.init) ?? ""
+                        isoString(a.createdAt),
+                        a.durationSeconds.map(String.init) ?? "",
+                        a.audioPath == nil ? "false" : "true"
                     ]
                 }
                 if let url = writeCSV(fileName: "interviewready_attempts.csv", headers: headers, rows: rows, to: exportDirectory) {
@@ -519,7 +536,6 @@ struct SettingsView: View {
                 stories: stories,
                 attempts: attempts,
                 questions: questions.filter { $0.isCustom },
-                questionById: questionById,
                 includeJobs: exportSelection.includeJobs,
                 includeStories: exportSelection.includeStories,
                 includeAttempts: exportSelection.includeAttempts,
@@ -548,7 +564,6 @@ struct SettingsView: View {
         stories: [Story],
         attempts: [PracticeAttempt],
         questions: [Question],
-        questionById: [UUID: Question],
         includeJobs: Bool,
         includeStories: Bool,
         includeAttempts: Bool,
@@ -593,14 +608,12 @@ struct SettingsView: View {
             out.append("ATTEMPTS")
             if attempts.isEmpty { out.append("No attempts available\n") }
             for (i, a) in attempts.enumerated() {
-                let q = a.questionId.flatMap { questionById[$0] }
                 out.append("\(i + 1)) \(isoString(a.createdAt))")
-                out.append("Mode: \(a.source)")
+                out.append("Question ID: \(a.questionId.map { String(describing: $0) } ?? "None")")
                 out.append("Question: \(a.questionTextSnapshot)")
-                out.append("Category: \(q?.category ?? "None")")
-                out.append("Duration: \(a.durationSeconds.map(String.init) ?? "None")s")
-                out.append("Rating: \(a.confidence.map(String.init) ?? "None")")
-                out.append("Notes: \(a.notes ?? "None")")
+                out.append("Answer: \(a.notes ?? "None")")
+                out.append("Duration (seconds): \(a.durationSeconds.map(String.init) ?? "None")")
+                out.append("Has Audio: \(a.audioPath == nil ? "No" : "Yes")")
                 out.append("")
             }
         }
@@ -762,4 +775,3 @@ private struct ExportCheckboxRow: View {
         .buttonStyle(.plain)
     }
 }
-

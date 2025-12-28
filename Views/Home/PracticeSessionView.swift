@@ -6,6 +6,7 @@ struct PracticeSessionView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var purchaseManager: PurchaseManager
     @Query(sort: \Story.lastUpdated, order: .reverse) private var stories: [Story]
 
     @State private var currentIndex = 0
@@ -28,6 +29,8 @@ struct PracticeSessionView: View {
     @State private var lastSavedAttemptByQuestionId: [UUID: PracticeAttempt] = [:]
     @State private var selectedAttempt: PracticeAttempt?
     @State private var showTips = false
+
+    private let freeAnswerLimitPerQuestion = 3
 
     private var currentQuestion: QuestionBankItem {
         questions.indices.contains(currentIndex) ? questions[currentIndex] : .empty
@@ -455,6 +458,14 @@ struct PracticeSessionView: View {
                 .opacity(currentAnswerTrimmed.isEmpty ? 0.6 : 1)
             }
             .padding(.horizontal, 20)
+
+            if !purchaseManager.isPro {
+                Text(ProGate.unlimitedAnswers.inlineMessage)
+                    .font(.footnote)
+                    .foregroundStyle(Color.ink500)
+                    .padding(.horizontal, 20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
         .padding(.top, 8)
         .padding(.bottom, 12)
@@ -583,6 +594,8 @@ struct PracticeSessionView: View {
         let trimmed = currentAnswerTrimmed
         guard !trimmed.isEmpty else { return }
 
+        enforceAnswerLimitIfNeeded()
+
         let attempt = PracticeAttempt(
             source: "drill",
             questionTextSnapshot: currentQuestion.text,
@@ -604,6 +617,22 @@ struct PracticeSessionView: View {
         savedAttempts.append(attempt)
         lastSavedAttemptByQuestionId[currentQuestion.id] = attempt
         AnalyticsEventLogger.shared.log(.drillQuestionSaved)
+    }
+
+    private func enforceAnswerLimitIfNeeded() {
+        guard !purchaseManager.isPro else { return }
+        let predicate = #Predicate<PracticeAttempt> {
+            $0.questionId == currentQuestion.id || $0.questionTextSnapshot == currentQuestion.text
+        }
+        let descriptor = FetchDescriptor<PracticeAttempt>(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+        )
+        if let existing = try? modelContext.fetch(descriptor), existing.count >= freeAnswerLimitPerQuestion {
+            let overflow = existing.count - (freeAnswerLimitPerQuestion - 1)
+            let toDelete = existing.prefix(max(overflow, 0))
+            toDelete.forEach { modelContext.delete($0) }
+        }
     }
 
     private func startAgain() {

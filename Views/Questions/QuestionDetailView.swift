@@ -25,9 +25,10 @@ struct QuestionDetailView: View {
     @State private var selectedAnswerFilter: AnswerFilter = .all
 
     private let categories = ["General", "Basics", "Behavioral", "Technical", "Strengths", "Weaknesses"]
+    private let freeAnswerLimitPerQuestion = 3
 
     private var canEditCustomQuestion: Bool {
-        question.isCustom && purchaseManager.isPro
+        question.isCustom
     }
 
     private var questionTextBinding: Binding<String> {
@@ -260,6 +261,8 @@ struct QuestionDetailView: View {
                 question.dateAnswered = Date()
                 question.isAnswered = true
 
+                enforceAnswerLimitIfNeeded()
+
                 let attempt = PracticeAttempt(
                     source: "manual",
                     questionTextSnapshot: question.text,
@@ -295,6 +298,22 @@ struct QuestionDetailView: View {
         modelContext.delete(question)
         try? modelContext.save()
         dismiss()
+    }
+
+    private func enforceAnswerLimitIfNeeded() {
+        guard !purchaseManager.isPro else { return }
+        let predicate = #Predicate<PracticeAttempt> {
+            $0.questionId == question.id || $0.questionTextSnapshot == question.text
+        }
+        let descriptor = FetchDescriptor<PracticeAttempt>(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\.createdAt, order: .forward)]
+        )
+        if let existing = try? modelContext.fetch(descriptor), existing.count >= freeAnswerLimitPerQuestion {
+            let overflow = existing.count - (freeAnswerLimitPerQuestion - 1)
+            let toDelete = existing.prefix(max(overflow, 0))
+            toDelete.forEach { modelContext.delete($0) }
+        }
     }
 
     private var savedAnswersSection: some View {
@@ -348,6 +367,12 @@ struct QuestionDetailView: View {
                         }
                     }
                 }
+            }
+
+            if !purchaseManager.isPro {
+                Text(ProGate.unlimitedAnswers.inlineMessage)
+                    .font(.footnote)
+                    .foregroundStyle(Color.ink500)
             }
         }
     }

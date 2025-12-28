@@ -2,8 +2,6 @@
 
 import SwiftUI
 import SwiftData
-import StoreKit
-import UIKit
 
 enum ExportFormat: String, CaseIterable, Identifiable {
     case csv = "CSV"
@@ -15,7 +13,6 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.openURL) private var openURL
     @EnvironmentObject private var purchaseManager: PurchaseManager
     @EnvironmentObject private var dataController: AppDataController
 
@@ -36,6 +33,7 @@ struct SettingsView: View {
 
     // Paywall
     @State private var showPaywall = false
+    @State private var exportGateMessage: String?
 
     // Export
     @State private var showExportOptions = false
@@ -44,6 +42,10 @@ struct SettingsView: View {
     @State private var isGeneratingExport = false
     @State private var exportSelection = ExportSelection()
     @State private var exportFormat: ExportFormat = .csv
+
+    private var proGate: ProGatekeeper {
+        ProGatekeeper(isPro: { purchaseManager.isPro }, presentPaywall: { showPaywall = true })
+    }
 
     private var reminderTimeBinding: Binding<Date> {
         Binding(
@@ -175,7 +177,7 @@ struct SettingsView: View {
                                 .font(.headline)
                                 .foregroundStyle(Color.ink900)
 
-                            Text("Get unlimited practise questions, export your career stories, and sync across devices.")
+                            Text("Review your answers, export your data, scan notes into stories, and unlock unlimited custom questions.")
                                 .font(.subheadline)
                                 .foregroundStyle(Color.ink600)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -187,11 +189,9 @@ struct SettingsView: View {
                     }
 
                     if purchaseManager.isPro {
-                        PrimaryCTAButton(title: "Manage Subscription", systemImage: "chevron.right") {
-                            if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
-                                openURL(url)
-                            }
-                        }
+                        Text("You’re on Pro. Thank you for supporting InterviewReady.")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.ink600)
                     } else {
                         PrimaryCTAButton(title: "Upgrade to Pro") {
                             showPaywall = true
@@ -271,11 +271,26 @@ struct SettingsView: View {
             CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
                 VStack(spacing: 12) {
                     Button {
-                        showExportOptions = true
+                        proGate.requirePro(.export) {
+                            showExportOptions = true
+                        } onBlocked: {
+                            exportGateMessage = ProGate.export.inlineMessage
+                        }
                     } label: {
                         SettingsRow(icon: "square.and.arrow.up", title: "Export My Data") {
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(Color.ink400)
+                            if purchaseManager.isPro {
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(Color.ink400)
+                            } else {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "lock.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(Color.ink400)
+                                    Text("Pro")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(Color.ink400)
+                                }
+                            }
                         }
                     }
                     .buttonStyle(.plain)
@@ -308,9 +323,17 @@ struct SettingsView: View {
                 }
             }
 
-            Text("Your data is stored locally on this device. Exporting creates CSV or raw text files for sharing.")
-                .font(.footnote)
-                .foregroundStyle(Color.ink500)
+            VStack(alignment: .leading, spacing: 6) {
+                if !purchaseManager.isPro {
+                    Text(exportGateMessage ?? ProGate.export.inlineMessage)
+                        .font(.footnote)
+                        .foregroundStyle(Color.ink500)
+                }
+
+                Text("Your data is stored locally on this device. Exporting creates CSV or raw text files for sharing.")
+                    .font(.footnote)
+                    .foregroundStyle(Color.ink500)
+            }
         }
     }
 
@@ -545,6 +568,10 @@ struct SettingsView: View {
             let fileURL = exportDirectory.appendingPathComponent("interviewready_export.txt")
             try text.write(to: fileURL, atomically: true, encoding: .utf8)
             urls = [fileURL]
+        }
+
+        if let analyticsURL = try? AnalyticsEventLogger.shared.exportLogFile() {
+            urls.append(analyticsURL)
         }
 
         return urls

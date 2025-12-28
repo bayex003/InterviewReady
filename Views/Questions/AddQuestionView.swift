@@ -4,11 +4,22 @@ import SwiftData
 struct AddQuestionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var purchaseManager: PurchaseManager
+
+    @Query(filter: #Predicate<Question> { $0.isCustom }) private var customQuestions: [Question]
 
     @State private var text: String = ""
     @State private var category: String = "General"
     @State private var tip: String = ""
     @State private var exampleAnswer: String = ""
+    @State private var showPaywall = false
+    @State private var gateMessage: String?
+
+    private let freeCustomQuestionLimit = 10
+
+    private var proGate: ProGatekeeper {
+        ProGatekeeper(isPro: { purchaseManager.isPro }, presentPaywall: { showPaywall = true })
+    }
 
     // Keep categories flexible; you can edit this list anytime
     private let categories = [
@@ -39,6 +50,20 @@ struct AddQuestionView: View {
                     TextEditor(text: $exampleAnswer)
                         .frame(minHeight: 140)
                 }
+
+                if !purchaseManager.isPro {
+                    Section {
+                        if let gateMessage {
+                            Text(gateMessage)
+                                .font(.footnote)
+                                .foregroundStyle(Color.ink500)
+                        } else {
+                            Text(ProGate.unlimitedCustomQuestions.inlineMessage)
+                                .font(.footnote)
+                                .foregroundStyle(Color.ink500)
+                        }
+                    }
+                }
             }
             .navigationTitle("New Question")
             .navigationBarTitleDisplayMode(.inline)
@@ -51,10 +76,21 @@ struct AddQuestionView: View {
                         .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
+            .sheet(isPresented: $showPaywall) {
+                PaywallView()
+                    .environmentObject(purchaseManager)
+            }
         }
     }
 
     private func saveAndDismiss() {
+        if !purchaseManager.isPro, customQuestions.count >= freeCustomQuestionLimit {
+            proGate.requirePro(.unlimitedCustomQuestions, onAllowed: {}, onBlocked: {
+                gateMessage = ProGate.unlimitedCustomQuestions.inlineMessage
+            })
+            return
+        }
+
         let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedText.isEmpty else { return }
 

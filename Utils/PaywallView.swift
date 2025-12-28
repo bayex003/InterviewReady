@@ -32,6 +32,7 @@ struct PaywallView: View {
 
                     primaryButton
                     secondaryButton
+                    tertiaryButton
 
                     Text("One-time purchase. No subscription.")
                         .font(.caption)
@@ -63,7 +64,7 @@ struct PaywallView: View {
                 .font(.title2.bold())
                 .foregroundStyle(Color.ink900)
 
-            Text("Unlock lifetime access to Pro features.")
+            Text("Make every practise round count with Pro features.")
                 .font(.subheadline)
                 .foregroundStyle(Color.ink600)
 
@@ -78,10 +79,11 @@ struct PaywallView: View {
 
     private var benefits: some View {
         VStack(alignment: .leading, spacing: 12) {
-            BenefitRow(icon: "square.and.arrow.up", text: "Export your interview pack", iconColor: Color.sage500)
-            BenefitRow(icon: "clock.arrow.circlepath", text: "Practice history & progress tracking", iconColor: Color.sage500)
-            BenefitRow(icon: "icloud", text: "iCloud sync & backup", iconColor: Color.sage500)
-            BenefitRow(icon: "doc.text.viewfinder", text: "Scan notes into Stories", iconColor: Color.sage500)
+            BenefitRow(icon: "clock.arrow.circlepath", text: "Unlimited answer history", iconColor: Color.sage500)
+            BenefitRow(icon: "square.and.arrow.up", text: "Export your data (CSV + raw text)", iconColor: Color.sage500)
+            BenefitRow(icon: "list.bullet.rectangle", text: "Review Mode for saved answers", iconColor: Color.sage500)
+            BenefitRow(icon: "doc.text.viewfinder", text: "Scan notes into stories", iconColor: Color.sage500)
+            BenefitRow(icon: "questionmark.circle", text: "Unlimited custom questions", iconColor: Color.sage500)
         }
         .padding()
         .background(Color.surfaceWhite)
@@ -113,9 +115,9 @@ struct PaywallView: View {
 
     private var primaryTitle: String {
         if let priceText {
-            return "Unlock Pro (\(priceText))"
+            return "Start Pro (\(priceText))"
         }
-        return "Unlock Pro (One-time)"
+        return "Start Pro (One-time)"
     }
 
     private var secondaryButton: some View {
@@ -127,7 +129,7 @@ struct PaywallView: View {
                     ProgressView()
                         .tint(Color.ink900)
                 }
-                Text(isWorking ? "Restoring…" : "Restore Purchase")
+                Text(isWorking ? "Restoring…" : "Restore purchases")
             }
             .fontWeight(.semibold)
             .frame(maxWidth: .infinity)
@@ -139,6 +141,16 @@ struct PaywallView: View {
         }
         .buttonStyle(.plain)
         .disabled(isWorking)
+    }
+
+    private var tertiaryButton: some View {
+        Button("Not now") {
+            dismiss()
+        }
+        .font(.subheadline.weight(.semibold))
+        .foregroundStyle(Color.ink600)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
     }
 
     @MainActor
@@ -217,4 +229,3 @@ private struct BenefitRow: View {
         .font(.subheadline)
     }
 }
-

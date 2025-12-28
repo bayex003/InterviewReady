@@ -10,10 +10,18 @@ struct SessionSummaryView: View {
     let onRetry: () -> Void
     let onExit: () -> Void
 
+    @EnvironmentObject private var purchaseManager: PurchaseManager
+
     @AppStorage("savedSessionCount") private var savedSessionCount = 0
 
-    @State private var showSavedAnswers = false
     @State private var trackedSession = false
+    @State private var showReviewMode = false
+    @State private var showPaywall = false
+    @State private var reviewGateMessage: String?
+
+    private var proGate: ProGatekeeper {
+        ProGatekeeper(isPro: { purchaseManager.isPro }, presentPaywall: { showPaywall = true })
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -32,8 +40,12 @@ struct SessionSummaryView: View {
         }
         .background(Color.cream50.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
-        .navigationDestination(isPresented: $showSavedAnswers) {
-            SessionAnswersListView(attempts: savedAttempts)
+        .navigationDestination(isPresented: $showReviewMode) {
+            ReviewModeView(questions: attempts, savedAttempts: savedAttempts)
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(purchaseManager)
         }
         .onAppear {
             guard !trackedSession else { return }
@@ -112,8 +124,18 @@ struct SessionSummaryView: View {
 
     private var actionsSection: some View {
         VStack(spacing: 12) {
-            primaryButton(title: "Review answers", isDisabled: savedAttempts.isEmpty) {
-                showSavedAnswers = true
+            primaryButton(title: "Review Mode", isDisabled: savedAttempts.isEmpty) {
+                proGate.requirePro(.reviewMode) {
+                    showReviewMode = true
+                } onBlocked: {
+                    reviewGateMessage = ProGate.reviewMode.inlineMessage
+                }
+            }
+
+            if !purchaseManager.isPro {
+                Text(reviewGateMessage ?? ProGate.reviewMode.inlineMessage)
+                    .font(.footnote)
+                    .foregroundStyle(Color.ink500)
             }
 
             HStack(spacing: 12) {

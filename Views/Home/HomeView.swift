@@ -10,6 +10,7 @@ struct HomeView: View {
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("hasCompletedNamePrompt_v1") private var hasCompletedNamePrompt: Bool = false
     @State private var showNameAlert = false
+    @State private var showStartDrillSheet = false
 
     @Query private var allStories: [Story]
     @Query(sort: \Job.dateApplied, order: .reverse) private var allJobs: [Job]
@@ -67,6 +68,9 @@ struct HomeView: View {
             }
         } message: {
             Text("What should we call you?")
+        }
+        .sheet(isPresented: $showStartDrillSheet) {
+            StartDrillSheet()
         }
     }
 
@@ -198,7 +202,7 @@ struct HomeView: View {
 
                     // ✅ Use the simplest PrimaryCTAButton signature to avoid init mismatch errors
                     PrimaryCTAButton("Start Session") {
-                        selectedTab = .practice
+                        showStartDrillSheet = true
                     }
                 }
             }

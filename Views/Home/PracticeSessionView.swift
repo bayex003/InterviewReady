@@ -101,7 +101,7 @@ struct PracticeSessionView: View {
 
             Spacer()
 
-            Text("Practice Session")
+            Text("Practise Session")
                 .font(.headline.weight(.semibold))
                 .foregroundStyle(Color.ink900)
 
@@ -530,5 +530,4 @@ extension QuestionBankItem {
         )
     }
 }
-
 

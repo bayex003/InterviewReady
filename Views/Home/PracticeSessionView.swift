@@ -3,7 +3,6 @@ import SwiftData
 
 struct PracticeSessionView: View {
     let questions: [QuestionBankItem]
-    @ObservedObject var attemptsStore: AttemptsStore
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -23,10 +22,12 @@ struct PracticeSessionView: View {
     @State private var summaryAttempts: [Attempt] = []
     @State private var summaryDurationSeconds = 0
     @State private var showSummary = false
+    @State private var savedAttempts: [PracticeAttempt] = []
     @State private var showStoryPicker = false
     @State private var savedQuestionId: UUID?
     @State private var lastSavedAttemptByQuestionId: [UUID: PracticeAttempt] = [:]
     @State private var selectedAttempt: PracticeAttempt?
+    @State private var showTips = false
 
     private var currentQuestion: QuestionBankItem {
         questions.indices.contains(currentIndex) ? questions[currentIndex] : .empty
@@ -52,6 +53,7 @@ struct PracticeSessionView: View {
                     questionMeta
                     progressBar
                     questionCard
+                    tipsPanel
                     inputModeToggle
                     inputArea
                     linkedStoryCard
@@ -71,10 +73,10 @@ struct PracticeSessionView: View {
         .navigationDestination(isPresented: $showSummary) {
             SessionSummaryView(
                 attempts: summaryAttempts,
+                savedAttempts: savedAttempts,
                 durationSeconds: summaryDurationSeconds,
                 onRetry: resetSession,
-                onExit: dismissToQuestionBank,
-                attemptsStore: attemptsStore
+                onExit: dismissToQuestionBank
             )
         }
         .sheet(isPresented: $showStoryPicker) {
@@ -92,6 +94,7 @@ struct PracticeSessionView: View {
         }
         .onChange(of: currentIndex) { _, _ in
             loadDraftForCurrentQuestion()
+            showTips = false
         }
         .onChange(of: responseText) { _, newValue in
             draftsByQuestionId[currentQuestion.id] = newValue
@@ -115,7 +118,7 @@ struct PracticeSessionView: View {
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Close practice session")
+            .accessibilityLabel("Close practise session")
             .accessibilityHint("Returns to the question bank")
 
             Spacer()
@@ -141,16 +144,33 @@ struct PracticeSessionView: View {
 
     private var questionMeta: some View {
         HStack(alignment: .lastTextBaseline) {
-            Text("QUESTION \(currentIndex + 1) OF \(totalQuestions)")
+            Text("Question \(currentIndex + 1) of \(totalQuestions)")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Color.ink600)
-                .tracking(1.2)
 
             Spacer()
 
-            Text(currentQuestion.category.title)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(Color.ink500)
+            Button {
+                showTips.toggle()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "lightbulb.fill")
+                    Text("Tips")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .foregroundStyle(showTips ? Color.sage500 : Color.ink500)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(showTips ? Color.sage100 : Color.surfaceWhite)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color.ink200, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Question progress")
@@ -188,6 +208,38 @@ struct PracticeSessionView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    private var tipsPanel: some View {
+        Group {
+            if showTips {
+                let tips = DrillTipsEngine().tips(for: responseText)
+                CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Quick tips")
+                            .font(.headline)
+                            .foregroundStyle(Color.ink900)
+
+                        if tips.isEmpty {
+                            Text("No tips right now — keep going.")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.ink500)
+                        } else {
+                            ForEach(tips, id: \.self) { tip in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Image(systemName: "sparkles")
+                                        .foregroundStyle(Color.sage500)
+                                    Text(tip)
+                                        .font(.subheadline)
+                                        .foregroundStyle(Color.ink700)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -379,13 +431,15 @@ struct PracticeSessionView: View {
                 }
 
                 controlButton(
-                    title: "Next",
-                    systemImage: "chevron.right"
+                    title: currentIndex >= questions.count - 1 ? "Finish" : "Next",
+                    systemImage: currentIndex >= questions.count - 1 ? "checkmark.circle" : "chevron.right"
                 ) {
-                    goToNextQuestion()
+                    if currentIndex >= questions.count - 1 {
+                        endSession()
+                    } else {
+                        goToNextQuestion()
+                    }
                 }
-                .disabled(currentIndex >= questions.count - 1)
-                .opacity(currentIndex >= questions.count - 1 ? 0.5 : 1)
             }
             .padding(.horizontal, 20)
 
@@ -454,6 +508,7 @@ struct PracticeSessionView: View {
         let endDate = Date()
         summaryDurationSeconds = max(Int(endDate.timeIntervalSince(sessionStart)), 0)
         summaryAttempts = buildSummaryAttempts(timestamp: endDate)
+        AnalyticsEventLogger.shared.log(.drillCompleted)
         showSummary = true
     }
 
@@ -489,6 +544,7 @@ struct PracticeSessionView: View {
         summaryAttempts = []
         summaryDurationSeconds = 0
         showSummary = false
+        savedAttempts = []
         savedQuestionId = nil
         lastSavedAttemptByQuestionId = [:]
     }
@@ -541,7 +597,13 @@ struct PracticeSessionView: View {
 
         draftsByQuestionId[currentQuestion.id] = trimmed
         savedQuestionId = currentQuestion.id
+
+        if let previous = lastSavedAttemptByQuestionId[currentQuestion.id] {
+            savedAttempts.removeAll { $0.id == previous.id }
+        }
+        savedAttempts.append(attempt)
         lastSavedAttemptByQuestionId[currentQuestion.id] = attempt
+        AnalyticsEventLogger.shared.log(.drillQuestionSaved)
     }
 
     private func startAgain() {

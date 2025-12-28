@@ -4,7 +4,6 @@ import SwiftData
 struct StartDrillSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @EnvironmentObject private var attemptsStore: AttemptsStore
 
     @State private var availableCount: Int = 0
     @State private var drillQuestions: [QuestionBankItem] = []
@@ -43,7 +42,7 @@ struct StartDrillSheet: View {
             }
             .onAppear(perform: refreshAvailableCount)
             .navigationDestination(isPresented: $showDrill) {
-                PracticeSessionView(questions: drillQuestions, attemptsStore: attemptsStore)
+                PracticeSessionView(questions: drillQuestions)
             }
             .navigationDestination(isPresented: $showQuestionSelection) {
                 QuestionsListView(initialSelectionMode: true, showsSelectionToggle: false)
@@ -111,6 +110,7 @@ struct StartDrillSheet: View {
         }
 
         drillQuestions = Array(candidates.shuffled().prefix(3)).map { QuestionBankItem($0) }
+        AnalyticsEventLogger.shared.log(.drillStartedRandom)
         showDrill = true
     }
 

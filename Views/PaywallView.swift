@@ -25,7 +25,7 @@ struct PaywallView: View {
 
                     VStack(alignment: .leading, spacing: 12) {
                         BenefitRow(icon: "square.and.arrow.up", text: "Export All Data (PDF/TXT/Share)")
-                        BenefitRow(icon: "clock.arrow.circlepath", text: "Attempt History (see practice attempts)")
+                        BenefitRow(icon: "clock.arrow.circlepath", text: "Attempt History (see practise attempts)")
                         BenefitRow(icon: "doc.text.viewfinder", text: "Scan Notes into Moments (OCR)")
                         BenefitRow(icon: "icloud", text: "iCloud Sync (backup + multi-device)")
                     }

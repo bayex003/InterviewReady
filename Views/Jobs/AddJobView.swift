@@ -78,6 +78,10 @@ struct AddJobView: View {
             .navigationTitle("Add Application")
             .navigationBarTitleDisplayMode(.inline)
             .tapToDismissKeyboard()
+            .safeAreaInset(edge: .bottom) {
+                actionBar
+            }
+            .ignoresSafeArea(.keyboard, edges: .bottom)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
@@ -205,6 +209,48 @@ struct AddJobView: View {
         }
     }
 
+    private var actionBar: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                Button("Cancel") {
+                    dismiss()
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.ink600)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.surfaceWhite)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.ink200, lineWidth: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .buttonStyle(.plain)
+
+                Button("Save") {
+                    saveJob()
+                }
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(Color.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.sage500.opacity(canSave ? 1 : 0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .buttonStyle(.plain)
+                .disabled(!canSave)
+            }
+            .padding(.horizontal, 20)
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+        .background(Color.cream50)
+        .overlay(
+            Divider()
+                .opacity(0.4),
+            alignment: .top
+        )
+    }
+
     // MARK: - Save
 
     private func saveJob() {
@@ -241,6 +287,7 @@ struct AddJobView: View {
         }
 
         modelContext.insert(job)
+        AnalyticsEventLogger.shared.log(.jobSaved)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
     }

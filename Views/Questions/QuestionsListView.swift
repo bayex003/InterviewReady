@@ -58,7 +58,7 @@ struct QuestionsListView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showSession) {
-            PracticeSessionView(questions: sessionQuestions, attemptsStore: attemptsStore)
+            PracticeSessionView(questions: sessionQuestions)
         }
     }
 
@@ -229,6 +229,7 @@ struct QuestionsListView: View {
             PrimaryCTAButton(buttonTitle) {
                 let selected = filteredQuestions.filter { selectedQuestionIDs.contains($0.id) }
                 sessionQuestions = selected.map { QuestionBankItem($0) }
+                AnalyticsEventLogger.shared.log(.drillStartedSelected)
                 showSession = true
             }
             .opacity(selectedQuestionIDs.isEmpty ? 0.5 : 1)

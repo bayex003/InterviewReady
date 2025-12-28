@@ -52,7 +52,7 @@ struct JobsListView: View {
             AddJobView()
         }
         .navigationDestination(item: $selectedJob) { job in
-            JobDetailViewLocal(job: job)
+            JobDetailView(job: job)
         }
     }
 
@@ -278,61 +278,6 @@ private enum JobStageFilter: String, CaseIterable, Identifiable {
         case .offer: return job.stage == .offer
         case .rejected: return job.stage == .rejected
         }
-    }
-}
-
-// MARK: - Detail (minimal)
-
-private struct JobDetailViewLocal: View {
-    let job: Job
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(job.roleTitle)
-                    .font(.title2.bold())
-                    .foregroundStyle(Color.ink900)
-
-                Text(job.companyName)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.ink600)
-
-                Divider()
-
-                Chip(title: job.stage.rawValue, isSelected: true)
-
-                if let location = job.location, !location.isEmpty {
-                    Text("Location: \(location)")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ink700)
-                }
-
-                if let salary = job.salary, !salary.isEmpty {
-                    Text("Salary: \(salary)")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ink700)
-                }
-
-                if let date = job.nextInterviewDate {
-                    Text("Next interview: \(DateFormattersIR.mediumDate.string(from: date))")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ink700)
-                }
-
-                if !job.generalNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Divider()
-                    Text(job.generalNotes)
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ink700)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 32)
-        }
-        .background(Color.cream50.ignoresSafeArea())
-        .navigationTitle("Application")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

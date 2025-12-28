@@ -89,13 +89,3 @@ private struct KeyboardDismissBackground: UIViewRepresentable {
         }
     }
 }
-
-// MARK: - Floating Add Button Position
-extension View {
-    func floatingAddButtonPosition() -> some View {
-        self
-            .padding(.trailing, 18)
-            .padding(.bottom, 96) // keeps it above the floating tab bar
-    }
-}
-

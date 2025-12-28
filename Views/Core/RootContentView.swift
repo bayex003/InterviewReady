@@ -44,12 +44,6 @@ struct RootContentView: View {
             }
             .tag(AppTab.practice)
             .tabItem { Label(AppTab.practice.title, systemImage: AppTab.practice.systemImage) }
-
-            NavigationStack {
-                SettingsView()
-            }
-            .tag(AppTab.settings)
-            .tabItem { Label(AppTab.settings.title, systemImage: AppTab.settings.systemImage) }
         }
         // ✅ Fix the “blue” selection — now it matches your design tokens
         .tint(Color.sage500)

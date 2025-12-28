@@ -14,6 +14,13 @@ struct QuestionsListView: View {
     @State private var showSession: Bool = false
     @State private var sessionQuestions: [QuestionBankItem] = []
 
+    private let showsSelectionToggle: Bool
+
+    init(initialSelectionMode: Bool = false, showsSelectionToggle: Bool = true) {
+        self.showsSelectionToggle = showsSelectionToggle
+        _isSelecting = State(initialValue: initialSelectionMode)
+    }
+
     private var filteredQuestions: [Question] {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -45,7 +52,7 @@ struct QuestionsListView: View {
                 .padding(.bottom, isSelecting ? 120 : 24)
             }
 
-            if isSelecting && !selectedQuestionIDs.isEmpty {
+            if isSelecting {
                 startSessionBar
             }
         }
@@ -65,14 +72,16 @@ struct QuestionsListView: View {
 
             Spacer()
 
-            Button(isSelecting ? "Done" : "Select") {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isSelecting.toggle()
-                    if !isSelecting { selectedQuestionIDs.removeAll() }
+            if showsSelectionToggle {
+                Button(isSelecting ? "Done" : "Select") {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        isSelecting.toggle()
+                        if !isSelecting { selectedQuestionIDs.removeAll() }
+                    }
                 }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.sage500)
             }
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(Color.sage500)
         }
     }
 
@@ -199,11 +208,17 @@ struct QuestionsListView: View {
         VStack(spacing: 10) {
             Divider().opacity(0.4)
 
-            PrimaryCTAButton("Start session (\(selectedQuestionIDs.count))") {
+            let buttonTitle = selectedQuestionIDs.isEmpty
+                ? "Start drill"
+                : "Start drill (\(selectedQuestionIDs.count))"
+
+            PrimaryCTAButton(buttonTitle) {
                 let selected = filteredQuestions.filter { selectedQuestionIDs.contains($0.id) }
                 sessionQuestions = selected.map { QuestionBankItem($0) }
                 showSession = true
             }
+            .opacity(selectedQuestionIDs.isEmpty ? 0.5 : 1)
+            .disabled(selectedQuestionIDs.isEmpty)
             .padding(.horizontal, 20)
             .padding(.bottom, 12)
         }

@@ -36,7 +36,7 @@ struct OnboardingView: View {
             ]
         ),
         OnboardingSlide(
-            titleLine1: "Practice with",
+            titleLine1: "Practise with",
             titleHighlight: "Purpose",
             description: "Don’t memorise scripts. Link your real-world experiences to top interview questions and build a library of winning answers.",
             ctaTitle: "Start Practising",

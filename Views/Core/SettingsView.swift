@@ -236,7 +236,7 @@ struct SettingsView: View {
 
             CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
                 VStack(spacing: 12) {
-                    SettingsRow(icon: "bell", title: "Daily Practice") {
+                    SettingsRow(icon: "bell", title: "Daily Practise") {
                         Toggle("", isOn: $isDailyReminderEnabled)
                             .labelsHidden()
                             .tint(Color.sage500)

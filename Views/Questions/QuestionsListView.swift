@@ -13,6 +13,7 @@ struct QuestionsListView: View {
 
     @State private var showSession: Bool = false
     @State private var sessionQuestions: [QuestionBankItem] = []
+    @State private var showAddQuestion = false
 
     private let showsSelectionToggle: Bool
 
@@ -60,6 +61,9 @@ struct QuestionsListView: View {
         .sheet(isPresented: $showSession) {
             PracticeSessionView(questions: sessionQuestions)
         }
+        .sheet(isPresented: $showAddQuestion) {
+            AddQuestionView()
+        }
     }
 
     // MARK: - Title Row
@@ -72,15 +76,33 @@ struct QuestionsListView: View {
 
             Spacer()
 
-            if showsSelectionToggle {
-                Button(isSelecting ? "Done" : "Select") {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isSelecting.toggle()
-                        if !isSelecting { selectedQuestionIDs.removeAll() }
-                    }
+            HStack(spacing: 12) {
+                Button {
+                    showAddQuestion = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(Color.ink900)
+                        .frame(width: 44, height: 44)
+                        .background(Color.surfaceWhite)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle().stroke(Color.ink200, lineWidth: 1)
+                        )
                 }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.sage500)
+                .buttonStyle(.plain)
+                .accessibilityLabel("Add question")
+
+                if showsSelectionToggle {
+                    Button(isSelecting ? "Done" : "Select") {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isSelecting.toggle()
+                            if !isSelecting { selectedQuestionIDs.removeAll() }
+                        }
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.sage500)
+                }
             }
         }
     }
@@ -167,7 +189,15 @@ struct QuestionsListView: View {
 
     private var questionsSection: some View {
         VStack(spacing: 12) {
-            if filteredQuestions.isEmpty {
+            if questions.isEmpty {
+                EmptyStateCard(
+                    systemImage: "text.bubble",
+                    title: "Build your question bank",
+                    subtitle: "Add custom questions to practise with anytime.",
+                    ctaTitle: "Add a question",
+                    action: { showAddQuestion = true }
+                )
+            } else if filteredQuestions.isEmpty {
                 CardContainer(showShadow: false) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("No questions found")

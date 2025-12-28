@@ -13,7 +13,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .home: return "Home"
         case .jobs: return "Jobs"
         case .stories: return "Stories"
-        case .practice: return "Practice"
+        case .practice: return "Practise"
         }
     }
 

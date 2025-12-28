@@ -83,8 +83,6 @@
 		F62008712EECC47600B94259 /* Exceptions for "Components" folder in "InterviewReady" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				CardContainer.swift,
-				CompatibilityShims.swift,
 				DictationButton.swift,
 			);
 			target = F62008032EEC8DC000B94259 /* InterviewReady */;

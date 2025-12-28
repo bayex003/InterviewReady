@@ -185,39 +185,12 @@ struct StoryBankView: View {
     // MARK: - Empty / No results (matches redesign vibe)
 
     private var emptyStateCard: some View {
-        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 24, showShadow: false) {
-            VStack(spacing: 14) {
-                ZStack {
-                    Circle()
-                        .fill(Color.sage100.opacity(0.8))
-                        .frame(width: 56, height: 56)
-
-                    Image(systemName: "lightbulb.fill")
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundStyle(Color.sage500)
-                }
-
-                Text("Need inspiration?")
-                    .font(.headline)
-                    .foregroundStyle(Color.ink900)
-
-                Text("Try adding a story about a time you handled a tight deadline.")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.ink600)
-                    .multilineTextAlignment(.center)
-
-                PrimaryCTAButton("Write your first story") {
-                    handleAddTapped()
-                }
-                .frame(maxWidth: 260)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 18)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(style: StrokeStyle(lineWidth: 1, dash: [6]))
-                .foregroundStyle(Color.ink200)
+        EmptyStateCard(
+            systemImage: "lightbulb.fill",
+            title: "Need inspiration?",
+            subtitle: "Try adding a story about a time you handled a tight deadline.",
+            ctaTitle: "Write your first story",
+            action: { handleAddTapped() }
         )
     }
 
@@ -336,4 +309,3 @@ private struct StoryCardView: View {
         }
     }
 }
-

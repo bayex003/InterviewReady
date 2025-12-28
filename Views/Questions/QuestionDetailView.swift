@@ -24,7 +24,7 @@ struct QuestionDetailView: View {
     @State private var showPracticeSession = false
     @State private var selectedAnswerFilter: AnswerFilter = .all
 
-    private let categories = ["General", "Basics", "Behavioral", "Technical", "Strengths", "Weaknesses"]
+    private let categories = ["General", "Basics", "Behavioural", "Technical", "Strengths", "Weaknesses"]
     private let freeAnswerLimitPerQuestion = 3
 
     private var canEditCustomQuestion: Bool {
@@ -251,7 +251,6 @@ struct QuestionDetailView: View {
         }
         .background(Color.cream50)
         .tapToDismissKeyboard()
-        .hidesFloatingTabBar()
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: question.answerText) { _, _ in
             didEditThisSession = true
@@ -343,11 +342,13 @@ struct QuestionDetailView: View {
             }
 
             if savedAttemptsForQuestion.isEmpty {
-                CardContainer(showShadow: false) {
-                    Text("No answers yet — Practise this question to add one.")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ink500)
-                }
+                EmptyStateCard(
+                    systemImage: "clock.arrow.circlepath",
+                    title: "No answers yet",
+                    subtitle: "Practise this question to save your first response.",
+                    ctaTitle: "Practise now",
+                    action: { showPracticeSession = true }
+                )
             } else {
                 VStack(spacing: 12) {
                     if filteredAttempts.isEmpty {

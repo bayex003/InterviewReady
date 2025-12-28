@@ -2,7 +2,7 @@
 // - Manual: open question, type something, go back → attempt added
 // - Manual: open question, do nothing, go back → no attempt
 // - Drill: stop recording on a question → drill attempt added
-// - Attempt history: Pro user sees list; free user sees locked message + paywall opens
+// - Attempt history: saved answers show newest first with editable detail view
 // - App compiles and runs
 
 import SwiftUI
@@ -19,8 +19,6 @@ struct QuestionDetailView: View {
 
     @State private var showTip = false
     @State private var showExample = false
-    @State private var showHistory = false
-    @State private var showPaywall = false
     @State private var didEditThisSession = false
     @State private var showDeleteConfirmation = false
 
@@ -119,6 +117,8 @@ struct QuestionDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 4)
 
+                savedAnswersSection
+
                 // Tip
                 DisclosureCard(
                     title: "Tip",
@@ -206,57 +206,6 @@ struct QuestionDetailView: View {
                     )
                 }
 
-                DisclosureCard(
-                    title: "Attempt History",
-                    systemImage: "clock.arrow.circlepath",
-                    isExpanded: $showHistory
-                ) {
-                    let attemptsForQuestion = allAttempts.filter {
-                        ($0.questionId == question.id) || ($0.questionTextSnapshot == question.text)
-                    }
-                    let recentAttempts = attemptsForQuestion.prefix(10)
-
-                    if purchaseManager.isPro {
-                        if recentAttempts.isEmpty {
-                            Text("No attempts yet.")
-                                .font(.body)
-                                .foregroundStyle(Color.ink600)
-                        } else {
-                            ForEach(recentAttempts, id: \.id) { attempt in
-                                HStack {
-                                    Text(attempt.createdAt, style: .date)
-                                        .font(.body)
-                                        .foregroundStyle(Color.ink900)
-
-                                    Spacer()
-
-                                    Text(attempt.source == "manual" ? "Manual" : "Drill")
-                                        .font(.subheadline)
-                                        .foregroundStyle(Color.ink600)
-                                }
-                            }
-                        }
-                    } else {
-                        Text("Pro feature. Upgrade to view your attempt history.")
-                            .font(.body)
-                            .foregroundStyle(Color.ink600)
-
-                        Button {
-                            showPaywall = true
-                        } label: {
-                            Text("Upgrade to Pro")
-                                .fontWeight(.bold)
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: .infinity)
-                                .background(Color.clear)
-                                .foregroundStyle(Color.ink900)
-                                .overlay(Capsule().strokeBorder(Color.ink200, lineWidth: 1))
-                                .clipShape(Capsule())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-
                 if canEditCustomQuestion {
                     Button(role: .destructive) {
                         showDeleteConfirmation = true
@@ -292,17 +241,15 @@ struct QuestionDetailView: View {
                 let attempt = PracticeAttempt(
                     source: "manual",
                     questionTextSnapshot: question.text,
-                    questionId: question.id
+                    questionId: question.id,
+                    notes: question.answerText,
+                    audioPath: nil
                 )
                 modelContext.insert(attempt)
                 try? modelContext.save()
             } else if question.answerText.isEmpty {
                 question.isAnswered = false
             }
-        }
-        .sheet(isPresented: $showPaywall) {
-            PaywallView()
-                .environmentObject(purchaseManager)
         }
         .alert("Delete this question?", isPresented: $showDeleteConfirmation) {
             Button("Delete", role: .destructive) {
@@ -318,6 +265,75 @@ struct QuestionDetailView: View {
         modelContext.delete(question)
         try? modelContext.save()
         dismiss()
+    }
+
+    private var savedAnswersSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("SAVED ANSWERS")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.ink600)
+                .padding(.leading, 4)
+
+            let attemptsForQuestion = allAttempts.filter {
+                ($0.questionId == question.id) || ($0.questionTextSnapshot == question.text)
+            }
+            let savedAttempts = attemptsForQuestion.filter {
+                let hasText = ($0.notes ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+                return hasText || $0.audioPath != nil
+            }
+
+            if savedAttempts.isEmpty {
+                CardContainer(showShadow: false) {
+                    Text("No saved answers yet.")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ink500)
+                }
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(savedAttempts, id: \.id) { attempt in
+                        NavigationLink {
+                            AnswerDetailView(attempt: attempt)
+                        } label: {
+                            savedAnswerRow(attempt)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    private func savedAnswerRow(_ attempt: PracticeAttempt) -> some View {
+        CardContainer(showShadow: false) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(DateFormatters.mediumDate.string(from: attempt.createdAt))
+                        .font(.caption)
+                        .foregroundStyle(Color.ink500)
+
+                    Spacer()
+
+                    if attempt.audioPath != nil {
+                        Image(systemName: "play.circle.fill")
+                            .foregroundStyle(Color.sage500)
+                    }
+                }
+
+                Text(answerPreview(for: attempt))
+                    .font(.subheadline)
+                    .foregroundStyle(Color.ink900)
+                    .lineLimit(2)
+            }
+        }
+    }
+
+    private func answerPreview(for attempt: PracticeAttempt) -> String {
+        let trimmed = (attempt.notes ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            return "Audio-only answer"
+        }
+        return trimmed
     }
 }
 

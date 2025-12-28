@@ -88,6 +88,15 @@ final class AudioService: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDelega
             return
         }
 
+        playRecording(from: url)
+    }
+
+    func playRecording(from path: String) {
+        let url = URL(fileURLWithPath: path)
+        playRecording(from: url)
+    }
+
+    private func playRecording(from url: URL) {
         // Check file exists and has data
         if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
            let fileSize = attributes[.size] as? UInt64,
@@ -129,4 +138,3 @@ final class AudioService: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDelega
         print("⏹️ Playback finished.")
     }
 }
-

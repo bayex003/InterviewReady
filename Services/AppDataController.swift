@@ -154,7 +154,8 @@ final class AppDataController: ObservableObject {
                 durationSeconds: attempt.durationSeconds,
                 createdAt: attempt.createdAt,
                 confidence: attempt.confidence,
-                notes: attempt.notes
+                notes: attempt.notes,
+                audioPath: attempt.audioPath
             )
             newAttempt.id = attempt.id
             cloudContext.insert(newAttempt)
@@ -163,4 +164,3 @@ final class AppDataController: ObservableObject {
         try cloudContext.save()
     }
 }
-

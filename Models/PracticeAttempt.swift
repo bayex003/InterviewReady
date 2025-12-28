@@ -18,6 +18,7 @@ final class PracticeAttempt {
     var questionTextSnapshot: String
     var confidence: Int?
     var notes: String?
+    var audioPath: String?
 
     init(
         source: String,
@@ -26,7 +27,8 @@ final class PracticeAttempt {
         durationSeconds: Int? = nil,
         createdAt: Date = Date(),
         confidence: Int? = nil,
-        notes: String? = nil
+        notes: String? = nil,
+        audioPath: String? = nil
     ) {
         self.id = UUID()
         self.createdAt = createdAt
@@ -36,5 +38,6 @@ final class PracticeAttempt {
         self.questionTextSnapshot = questionTextSnapshot
         self.confidence = confidence
         self.notes = notes
+        self.audioPath = audioPath
     }
 }

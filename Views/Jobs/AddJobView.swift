@@ -5,105 +5,255 @@ struct AddJobView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    // Form State
     @State private var companyName = ""
     @State private var roleTitle = ""
-    @State private var selectedStage: JobStage = .applied
-    @State private var applicationDate = Date()
-    @State private var nextInterviewDate: Date = Date()
-    @State private var hasScheduledInterview = false
+
+    @State private var selectedStage: JobStage = .saved
+
+    @State private var selectedLocationType: LocationType = .remote
+    @State private var locationDetail = ""
+
+    @State private var salaryMin = ""
+    @State private var salaryMax = ""
+
+    @State private var includeNextInterview = false
+    @State private var nextInterviewDate = Date()
+    @State private var nextInterviewNotes = ""
+
     @State private var generalNotes = ""
 
-    // ✅ V2 (free): Optional fields
-    @State private var salary = ""
-    @State private var location = ""
+    private var canSave: Bool {
+        !companyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !roleTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Job Details") {
-                    TextField("Company Name (e.g. Spotify)", text: $companyName)
-                        .textInputAutocapitalization(.words)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 20) {
+                    SectionHeader(title: "Company", actionTitle: "") { }
 
-                    TextField("Role Title (e.g. iOS Engineer)", text: $roleTitle)
-                        .textInputAutocapitalization(.words)
-
-                    // ✅ New fields (optional)
-                    TextField("Salary (optional) (e.g. £55k–£65k, £30/hr)", text: $salary)
-                        .keyboardType(.numbersAndPunctuation)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-
-                    TextField("Location (optional) (e.g. Manchester · Hybrid)", text: $location)
-                        .textInputAutocapitalization(.words)
-                        .autocorrectionDisabled()
-
-                    Picker("Current Stage", selection: $selectedStage) {
-                        ForEach(JobStage.allCases, id: \.self) { stage in
-                            Text(stage.rawValue).tag(stage)
-                        }
+                    formField(title: "Company Name", icon: "building.2") {
+                        TextField("e.g. Google", text: $companyName)
+                            .textInputAutocapitalization(.words)
                     }
-                }
 
-                Section("Timeline") {
-                    DatePicker("Date Applied", selection: $applicationDate, displayedComponents: .date)
+                    SectionHeader(title: "Role", actionTitle: "") { }
 
-                    Toggle("Interview Scheduled?", isOn: $hasScheduledInterview)
-                        .tint(Color.sage500)
-
-                    if hasScheduledInterview {
-                        DatePicker("Interview Date", selection: $nextInterviewDate)
-                            .foregroundStyle(Color.sage500)
+                    formField(title: "Job Title", icon: "briefcase") {
+                        TextField("e.g. Product Designer", text: $roleTitle)
+                            .textInputAutocapitalization(.words)
                     }
-                }
 
-                Section {
-                    TextEditor(text: $generalNotes)
-                        .frame(minHeight: 120)
-                        .scrollContentBackground(.hidden)
-                } header: {
-                    Text("Notes")
+                    SectionHeader(title: "Location", actionTitle: "") { }
+
+                    locationChips
+
+                    formField(title: "City or Town (optional)", icon: "mappin.and.ellipse") {
+                        TextField("e.g. Manchester", text: $locationDetail)
+                            .textInputAutocapitalization(.words)
+                    }
+
+                    SectionHeader(title: "Salary Range (annual, optional)", actionTitle: "") { }
+
+                    salaryFields
+
+                    SectionHeader(title: "Application Stage", actionTitle: "") { }
+
+                    stagePicker
+
+                    SectionHeader(title: "Next Interview", actionTitle: "") { }
+
+                    nextInterviewBlock
+
+                    SectionHeader(title: "Notes", actionTitle: "") { }
+
+                    notesField
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 140)
             }
-            .navigationTitle("Add Job")
+            .background(Color.cream50)
+            .navigationTitle("Add Application")
+            .navigationBarTitleDisplayMode(.inline)
+            .tapToDismissKeyboard()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .foregroundStyle(Color.ink600)
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel("Close")
                 }
+
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { saveJob() }
-                        .disabled(companyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                                  roleTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Button("Save") {
+                        saveJob()
+                    }
+                    .disabled(!canSave)
                 }
             }
-            .formKeyboardBehavior()
-            .floatingTabBarHidden(true)
-
         }
     }
 
-    private func saveJob() {
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    // MARK: - UI
 
+    private var locationChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(LocationType.allCases, id: \.self) { item in
+                    Chip(title: item.title, isSelected: selectedLocationType == item) {
+                        selectedLocationType = item
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private var salaryFields: some View {
+        HStack(spacing: 12) {
+            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 16, showShadow: false) {
+                HStack(spacing: 8) {
+                    Text("£")
+                        .foregroundStyle(Color.ink500)
+
+                    TextField("Min", text: $salaryMin)
+                        .keyboardType(.numberPad)
+                }
+            }
+
+            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 16, showShadow: false) {
+                HStack(spacing: 8) {
+                    Text("£")
+                        .foregroundStyle(Color.ink500)
+
+                    TextField("Max", text: $salaryMax)
+                        .keyboardType(.numberPad)
+                }
+            }
+        }
+    }
+
+    private var stagePicker: some View {
+        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 16, showShadow: false) {
+            Picker("Stage", selection: $selectedStage) {
+                ForEach(JobStage.allCases, id: \.self) { stage in
+                    Text(stage.rawValue).tag(stage)
+                }
+            }
+            .pickerStyle(.menu)
+        }
+    }
+
+    private var nextInterviewBlock: some View {
+        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                Toggle("Interview scheduled?", isOn: $includeNextInterview)
+                    .tint(Color.sage500)
+
+                if includeNextInterview {
+                    HStack(spacing: 12) {
+                        DatePicker("Date", selection: $nextInterviewDate, displayedComponents: .date)
+                            .datePickerStyle(.compact)
+
+                        DatePicker("Time", selection: $nextInterviewDate, displayedComponents: .hourAndMinute)
+                            .datePickerStyle(.compact)
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(Color.ink600)
+
+                    TextField("Who are you meeting? Any topics to prepare for?", text: $nextInterviewNotes, axis: .vertical)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ink900)
+                        .lineLimit(3, reservesSpace: true)
+                }
+            }
+        }
+    }
+
+    private var notesField: some View {
+        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
+            TextField("Add any extra notes...", text: $generalNotes, axis: .vertical)
+                .font(.subheadline)
+                .foregroundStyle(Color.ink900)
+                .lineLimit(5, reservesSpace: true)
+        }
+    }
+
+    private func formField<Content: View>(title: String, icon: String, @ViewBuilder
+    content: @escaping () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(Color.ink900)
+
+            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 16, showShadow: false) {
+                HStack(spacing: 10) {
+                    Image(systemName: icon)
+                        .foregroundStyle(Color.ink500)
+
+                    content()
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ink900)
+                }
+            }
+        }
+    }
+
+    // MARK: - Save
+
+    private func saveJob() {
         let trimmedCompany = companyName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedRole = roleTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedCompany.isEmpty, !trimmedRole.isEmpty else { return }
 
-        let newJob = Job(companyName: trimmedCompany, roleTitle: trimmedRole, stage: selectedStage)
-        newJob.dateApplied = applicationDate
-        newJob.generalNotes = generalNotes
+        let city = locationDetail.trimmingCharacters(in: .whitespacesAndNewlines)
+        let locationValue: String? = {
+            if city.isEmpty { return selectedLocationType.title }
+            return "\(selectedLocationType.title) · \(city)"
+        }()
 
-        let trimmedSalary = salary.trimmingCharacters(in: .whitespacesAndNewlines)
-        newJob.salary = trimmedSalary.isEmpty ? nil : trimmedSalary
+        let min = salaryMin.trimmingCharacters(in: .whitespacesAndNewlines)
+        let max = salaryMax.trimmingCharacters(in: .whitespacesAndNewlines)
+        let salaryValue: String? = {
+            if min.isEmpty && max.isEmpty { return nil }
+            if !min.isEmpty && max.isEmpty { return "£\(min)+"
+            }
+            if min.isEmpty && !max.isEmpty { return "Up to £\(max)" }
+            return "£\(min)–£\(max)"
+        }()
 
-        let trimmedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
-        newJob.location = trimmedLocation.isEmpty ? nil : trimmedLocation
+        let job = Job(companyName: trimmedCompany, roleTitle: trimmedRole, stage: selectedStage)
+        job.location = locationValue
+        job.salary = salaryValue
+        job.generalNotes = generalNotes.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if hasScheduledInterview {
-            newJob.nextInterviewDate = nextInterviewDate
+        if includeNextInterview {
+            job.nextInterviewDate = nextInterviewDate
+
+            let trimmedNextNotes = nextInterviewNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+            job.nextInterviewNotes = trimmedNextNotes.isEmpty ? nil : trimmedNextNotes
         }
 
-        modelContext.insert(newJob)
+        modelContext.insert(job)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
     }
 }
 
+private enum LocationType: CaseIterable {
+    case remote, hybrid, onsite
+
+    var title: String {
+        switch self {
+        case .remote: return "Remote"
+        case .hybrid: return "Hybrid"
+        case .onsite: return "On-site"
+        }
+    }
+}

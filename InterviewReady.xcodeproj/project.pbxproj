@@ -11,16 +11,17 @@
 		F620087B2EECE57E00B94259 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F620087A2EECE57C00B94259 /* OnboardingView.swift */; };
 		F62008952EEDF5FE00B94259 /* AppBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62008942EEDF5F900B94259 /* AppBackgroundView.swift */; };
 		F690A7852EFE20C000D6407B /* InterviewReadyV2.storekit in Resources */ = {isa = PBXBuildFile; fileRef = F690A7842EFE20C000D6407B /* InterviewReadyV2.storekit */; };
+		F6C950772F00C5AC007B70AD /* NameOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C950762F00C59F007B70AD /* NameOnboarding.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		F62008042EEC8DC000B94259 /* InterviewReady.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InterviewReady.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F62008122EEC8E0B00B94259 /* AppMain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMain.swift; sourceTree = "<group>"; };
-		F62008452EEC97B200B94259 /* RootContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootContentView.swift; sourceTree = "<group>"; };
 		F620086D2EECBB9200B94259 /* InterviewReady-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "InterviewReady-Info.plist"; sourceTree = "<group>"; };
 		F620087A2EECE57C00B94259 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		F62008942EEDF5F900B94259 /* AppBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBackgroundView.swift; sourceTree = "<group>"; };
 		F690A7842EFE20C000D6407B /* InterviewReadyV2.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = InterviewReadyV2.storekit; sourceTree = "<group>"; };
+		F6C950762F00C59F007B70AD /* NameOnboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameOnboarding.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -28,8 +29,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				ConfettiView.swift,
-				FloatingTabBar.swift,
-				FloatingTabBarHiddenModifier.swift,
 				RootContentView.swift,
 				SettingsView.swift,
 				ShareSheet.swift,
@@ -42,6 +41,7 @@
 			membershipExceptions = (
 				HomeView.swift,
 				PracticeSessionView.swift,
+				SessionSummaryView.swift,
 			);
 			target = F62008032EEC8DC000B94259 /* InterviewReady */;
 		};
@@ -62,6 +62,7 @@
 				QuestionDetailView.swift,
 				QuestionRow.swift,
 				QuestionsListView.swift,
+				SectionHeader.swift,
 			);
 			target = F62008032EEC8DC000B94259 /* InterviewReady */;
 		};
@@ -71,6 +72,8 @@
 				AddStoryView.swift,
 				DocumentScannerView.swift,
 				ScanInsertPickerView.swift,
+				ScanReviewView.swift,
+				StarPreviewInsertView.swift,
 				StoriesListView.swift,
 				StoryDetailView.swift,
 				StoryRow.swift,
@@ -80,6 +83,8 @@
 		F62008712EECC47600B94259 /* Exceptions for "Components" folder in "InterviewReady" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				CardContainer.swift,
+				CompatibilityShims.swift,
 				DictationButton.swift,
 			);
 			target = F62008032EEC8DC000B94259 /* InterviewReady */;
@@ -160,6 +165,11 @@
 			path = Utils;
 			sourceTree = "<group>";
 		};
+		F6C9506C2F00AAA9007B70AD /* Styles */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Styles;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -176,6 +186,7 @@
 		F62007FB2EEC8DC000B94259 = {
 			isa = PBXGroup;
 			children = (
+				F6C9506C2F00AAA9007B70AD /* Styles */,
 				F690A7842EFE20C000D6407B /* InterviewReadyV2.storekit */,
 				F62008942EEDF5F900B94259 /* AppBackgroundView.swift */,
 				F62008722EECDDF100B94259 /* Utils */,
@@ -202,7 +213,6 @@
 			isa = PBXGroup;
 			children = (
 				F62008792EECE56500B94259 /* Onboarding */,
-				F62008452EEC97B200B94259 /* RootContentView.swift */,
 				F620083D2EEC902000B94259 /* Stories */,
 				F620083C2EEC901A00B94259 /* Questions */,
 				F620083B2EEC901000B94259 /* Jobs */,
@@ -216,6 +226,7 @@
 		F62008792EECE56500B94259 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
+				F6C950762F00C59F007B70AD /* NameOnboarding.swift */,
 				F620087A2EECE57C00B94259 /* OnboardingView.swift */,
 			);
 			path = Onboarding;
@@ -242,6 +253,7 @@
 				F620081F2EEC8F4800B94259 /* Models */,
 				F62008292EEC8F6F00B94259 /* Services */,
 				F62008722EECDDF100B94259 /* Utils */,
+				F6C9506C2F00AAA9007B70AD /* Styles */,
 			);
 			name = InterviewReady;
 			packageProductDependencies = (
@@ -301,6 +313,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F620087B2EECE57E00B94259 /* OnboardingView.swift in Sources */,
+				F6C950772F00C5AC007B70AD /* NameOnboarding.swift in Sources */,
 				F62008132EEC8E1000B94259 /* AppMain.swift in Sources */,
 				F62008952EEDF5FE00B94259 /* AppBackgroundView.swift in Sources */,
 			);

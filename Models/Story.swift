@@ -12,6 +12,7 @@ final class Story {
     var action: String
     var result: String
     var notes: String
+    var linkedJob: Job?
     var dateAdded: Date
     var lastUpdated: Date
 
@@ -25,6 +26,7 @@ final class Story {
         self.action = ""
         self.result = ""
         self.notes = ""
+        self.linkedJob = nil
         self.dateAdded = Date()
         self.lastUpdated = Date()
     }

@@ -1,7 +1,11 @@
 import Foundation
+import Combine
+import SwiftUI
 
 @MainActor
 final class AttemptsStore: ObservableObject {
+    let objectWillChange = ObservableObjectPublisher()
+    
     @Published private(set) var attempts: [Attempt] = []
 
     private let defaults: UserDefaults
@@ -19,7 +23,12 @@ final class AttemptsStore: ObservableObject {
         decoder.dateDecodingStrategy = .iso8601
         self.decoder = decoder
 
-        load()
+        if let data = defaults.data(forKey: storageKey),
+           let loaded = try? decoder.decode([Attempt].self, from: data) {
+            self.attempts = loaded.sorted { $0.timestamp > $1.timestamp }
+        } else {
+            self.attempts = []
+        }
     }
 
     func add(_ newAttempts: [Attempt]) {
@@ -37,16 +46,6 @@ final class AttemptsStore: ObservableObject {
     func delete(at offsets: IndexSet) {
         attempts.remove(atOffsets: offsets)
         persist()
-    }
-
-    private func load() {
-        guard let data = defaults.data(forKey: storageKey) else { return }
-        do {
-            attempts = try decoder.decode([Attempt].self, from: data)
-                .sorted { $0.timestamp > $1.timestamp }
-        } catch {
-            attempts = []
-        }
     }
 
     private func persist() {

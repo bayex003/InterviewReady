@@ -2,16 +2,16 @@ import Foundation
 import SwiftData
 import UIKit
 
-enum ExportFormat: String, CaseIterable, Identifiable {
-    case csv = "CSV"
-    case rawText = "Raw Text"
-
-    var id: String { rawValue }
-    var title: String { rawValue }
-}
-
 @MainActor
-class DataExportManager {
+final class DataExportManager {
+    enum ExportFormat: String, CaseIterable, Identifiable {
+        case csv = "CSV"
+        case rawText = "Raw Text"
+
+        var id: String { rawValue }
+        var title: String { rawValue }
+    }
+
     private static let isoFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -20,24 +20,28 @@ class DataExportManager {
 
     static func generateExportFiles(
         context: ModelContext,
-        jobs: [JobApplication],
+        jobs: [Job],
         includeStories: Bool,
         includeAttempts: Bool,
         includeJobs: Bool,
         includeQuestions: Bool,
-        format: ExportFormat
+        format: DataExportManager.ExportFormat
     ) -> [URL]? {
         do {
-            let stories = includeStories ? try context.fetch(FetchDescriptor<Story>(sortBy: [SortDescriptor(\.lastUpdated, order: .reverse)])) : []
-            let questions = (includeAttempts || includeQuestions)
+            let stories: [Story] = includeStories
+                ? try context.fetch(FetchDescriptor<Story>(sortBy: [SortDescriptor(\.lastUpdated, order: .reverse)]))
+                : []
+
+            let questions: [Question] = (includeAttempts || includeQuestions)
                 ? try context.fetch(FetchDescriptor<Question>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]))
                 : []
-            let attempts = includeAttempts
+
+            let attempts: [PracticeAttempt] = includeAttempts
                 ? try context.fetch(FetchDescriptor<PracticeAttempt>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)]))
                 : []
 
-            let questionsById = Dictionary(uniqueKeysWithValues: questions.map { ($0.id, $0) })
-            let filteredQuestions = includeQuestions ? questions.filter { $0.isCustom } : []
+            let questionsById: [UUID: Question] = Dictionary(uniqueKeysWithValues: questions.map { ($0.id, $0) })
+            let filteredQuestions: [Question] = includeQuestions ? questions.filter { $0.isCustom } : []
 
             let exportDirectory = FileManager.default.temporaryDirectory
                 .appendingPathComponent("InterviewReadyExport_\(UUID().uuidString)", isDirectory: true)
@@ -61,19 +65,23 @@ class DataExportManager {
                         "updated_at"
                     ]
 
-                    let rows = stories.map { story in
-                        let normalizedTags = StoryStore.sortedTags(story.tags)
+                    let rows: [[String]] = stories.map { story in
+                        let tags = StoryStore.sortedTags(story.tags).joined(separator: ", ")
+                        let linkedJobId = story.linkedJob.map { "\($0.persistentModelID)" } ?? ""
+                        let linkedJobTitle = story.linkedJob.map { "\($0.companyName) · \($0.roleTitle)" } ?? ""
+                        let updatedAt = isoFormatter.string(from: story.lastUpdated)
+
                         return [
                             story.id.uuidString,
                             story.title,
-                            normalizedTags.joined(separator: ", "),
+                            tags,
                             story.situation,
                             story.task,
                             story.action,
                             story.result,
-                            "",
-                            "",
-                            isoFormatter.string(from: story.lastUpdated)
+                            linkedJobId,
+                            linkedJobTitle,
+                            updatedAt
                         ]
                     }
 
@@ -102,12 +110,16 @@ class DataExportManager {
                         "rating"
                     ]
 
-                    let rows = attempts.map { attempt in
+                    let rows: [[String]] = attempts.map { attempt in
                         let question = attempt.questionId.flatMap { questionsById[$0] }
+                        let timestamp = isoFormatter.string(from: attempt.createdAt)
+                        let duration = attempt.durationSeconds.map(String.init) ?? ""
+                        let rating = attempt.confidence.map(String.init) ?? ""
+
                         return [
                             attempt.id.uuidString,
-                            isoFormatter.string(from: attempt.createdAt),
-                            attempt.durationSeconds.map(String.init) ?? "",
+                            timestamp,
+                            duration,
                             attempt.source,
                             attempt.questionId?.uuidString ?? "",
                             attempt.questionTextSnapshot,
@@ -115,7 +127,7 @@ class DataExportManager {
                             "",
                             "",
                             attempt.notes ?? "",
-                            attempt.confidence.map(String.init) ?? ""
+                            rating
                         ]
                     }
 
@@ -134,25 +146,33 @@ class DataExportManager {
                         "job_id",
                         "company",
                         "role",
-                        "location_type",
+                        "location",
                         "stage",
                         "next_interview_datetime",
                         "next_interview_notes",
                         "created_at",
-                        "linked_story_count"
+                        "general_notes"
                     ]
 
-                    let rows = jobs.map { job in
-                        [
-                            job.id.uuidString,
+                    let rows: [[String]] = jobs.map { job in
+                        let jobId = "\(job.persistentModelID)"
+                        let location = job.location ?? ""
+                        let stage = job.stage.rawValue
+                        let nextInterview = job.nextInterviewDate.map { isoFormatter.string(from: $0) } ?? ""
+                        let nextNotes = job.nextInterviewNotes ?? ""
+                        let createdAt = isoFormatter.string(from: job.dateApplied)
+                        let notes = job.generalNotes
+
+                        return [
+                            jobId,
                             job.companyName,
                             job.roleTitle,
-                            job.locationType.rawValue,
-                            job.stage.rawValue,
-                            job.nextInterviewDate.map { isoFormatter.string(from: $0) } ?? "",
-                            job.nextInterviewNotes,
-                            isoFormatter.string(from: job.dateApplied),
-                            String(job.linkedStoryIDs.count)
+                            location,
+                            stage,
+                            nextInterview,
+                            nextNotes,
+                            createdAt,
+                            notes
                         ]
                     }
 
@@ -175,7 +195,7 @@ class DataExportManager {
                         "linked_story_count"
                     ]
 
-                    let rows = filteredQuestions.map { question in
+                    let rows: [[String]] = filteredQuestions.map { question in
                         [
                             question.id.uuidString,
                             question.text,
@@ -221,7 +241,7 @@ class DataExportManager {
     }
 
     private static func buildRawTextExport(
-        jobs: [JobApplication],
+        jobs: [Job],
         stories: [Story],
         attempts: [PracticeAttempt],
         questions: [Question],
@@ -270,7 +290,7 @@ class DataExportManager {
         return output.joined(separator: "\n")
     }
 
-    private static func appendJobsSection(to output: inout [String], jobs: [JobApplication]) {
+    private static func appendJobsSection(to output: inout [String], jobs: [Job]) {
         output.append("JOBS")
         if jobs.isEmpty {
             output.append("No jobs available")
@@ -282,13 +302,15 @@ class DataExportManager {
             output.append("\(index + 1))")
             output.append("Company: \(job.companyName)")
             output.append("Role: \(job.roleTitle)")
-            output.append("Location Type: \(job.locationType.rawValue)")
+            output.append("Location: \((job.location?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false) ? job.location! : "None")")
             output.append("Stage: \(job.stage.rawValue)")
             let nextInterview = job.nextInterviewDate.map { isoFormatter.string(from: $0) } ?? "None"
             output.append("Next Interview: \(nextInterview)")
-            output.append("Next Interview Notes: \(job.nextInterviewNotes.isEmpty ? "None" : job.nextInterviewNotes)")
+            let nextNotes = (job.nextInterviewNotes ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            output.append("Next Interview Notes: \(nextNotes.isEmpty ? "None" : nextNotes)")
             output.append("Created: \(isoFormatter.string(from: job.dateApplied))")
-            output.append("Linked Stories: \(job.linkedStoryIDs.count)")
+            let trimmedNotes = job.generalNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+            output.append("Notes: \(trimmedNotes.isEmpty ? "None" : trimmedNotes)")
             output.append("")
         }
     }
@@ -310,7 +332,13 @@ class DataExportManager {
             output.append("Task: \(story.task)")
             output.append("Action: \(story.action)")
             output.append("Result: \(story.result)")
-            output.append("Linked Job: None")
+
+            if let linkedJob = story.linkedJob {
+                output.append("Linked Job: \(linkedJob.companyName) · \(linkedJob.roleTitle)")
+            } else {
+                output.append("Linked Job: None")
+            }
+
             output.append("Last Updated: \(isoFormatter.string(from: story.lastUpdated))")
             output.append("")
         }
@@ -388,9 +416,7 @@ class DataExportManager {
     private static func csvEscaped(_ value: String) -> String {
         let needsQuotes = value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r")
         let escapedValue = value.replacingOccurrences(of: "\"", with: "\"\"")
-        if needsQuotes {
-            return "\"\(escapedValue)\""
-        }
-        return escapedValue
+        return needsQuotes ? "\"\(escapedValue)\"" : escapedValue
     }
 }
+

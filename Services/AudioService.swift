@@ -15,20 +15,22 @@ final class AudioService: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDelega
         super.init()
     }
 
+    // MARK: - Session Setup
+
     private func setupSessionForRecording() {
         let session = AVAudioSession.sharedInstance()
         do {
-            // "playAndRecord" is required for recording
-            // "defaultToSpeaker" ensures it plays back loud, not through the earpiece
-            // Bluetooth support (fixed: uses modern CategoryOptions)
+            // playAndRecord is required for recording
+            // defaultToSpeaker ensures playback uses loudspeaker (not earpiece)
+            // allowBluetoothA2DP is the modern replacement (removes allowBluetooth deprecation warning)
             try session.setCategory(
                 .playAndRecord,
-                mode: .default,
-                options: [.defaultToSpeaker, .allowBluetooth, .allowBluetoothA2DP]
+                mode: .spokenAudio,
+                options: [.defaultToSpeaker, .allowBluetoothA2DP]
             )
             try session.setActive(true)
         } catch {
-            print("Failed to set up audio session: \(error)")
+            print("Failed to set up audio session for recording: \(error)")
         }
     }
 
@@ -41,6 +43,8 @@ final class AudioService: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDelega
             print("Failed to set up playback session: \(error)")
         }
     }
+
+    // MARK: - Recording
 
     func startRecording(id: String) {
         setupSessionForRecording()
@@ -75,6 +79,8 @@ final class AudioService: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDelega
         isRecording = false
         // recordedFileURL is set in delegate callback
     }
+
+    // MARK: - Playback
 
     func playRecording() {
         guard let url = recordedFileURL else {
@@ -123,3 +129,4 @@ final class AudioService: NSObject, AVAudioRecorderDelegate, AVAudioPlayerDelega
         print("⏹️ Playback finished.")
     }
 }
+

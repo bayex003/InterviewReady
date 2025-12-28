@@ -5,6 +5,5 @@ struct StoryDetailView: View {
 
     var body: some View {
         NewStoryView(story: story)
-            .floatingTabBarHidden()
     }
 }

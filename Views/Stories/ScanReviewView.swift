@@ -29,9 +29,22 @@ struct ScanReviewView: View {
                     }
 
                     VStack(spacing: 12) {
-                        PrimaryCTAButton(title: "Assist STAR", systemImage: "sparkles") {
+                        Button {
                             onAssistSTAR()
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "sparkles")
+                                    .font(.headline)
+                                Text("Assist STAR")
+                                    .font(.headline)
+                            }
+                            .foregroundStyle(Color.surfaceWhite)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.ink900)
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         }
+                        .buttonStyle(.plain)
 
                         CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
                             Button {

@@ -4,35 +4,44 @@ import SwiftData
 struct HomeView: View {
     @Binding var selectedTab: AppTab
 
-    @EnvironmentObject private var jobsStore: JobsStore
     @EnvironmentObject private var attemptsStore: AttemptsStore
-    @EnvironmentObject private var router: AppRouter
+    //@EnvironmentObject private var router: AppRouter  // Removed to stabilise build
 
     @AppStorage("userName") private var userName: String = ""
     @AppStorage("hasCompletedNamePrompt_v1") private var hasCompletedNamePrompt: Bool = false
     @State private var showNameAlert = false
 
     @Query private var allStories: [Story]
+    @Query(sort: \Job.dateApplied, order: .reverse) private var allJobs: [Job]
 
     private let statCards: [HomeStat] = [
         HomeStat(title: "Applications", icon: "square.grid.2x2.fill"),
         HomeStat(title: "Stories", icon: "book.closed.fill"),
-        HomeStat(title: "Practiced", icon: "checkmark.circle.fill")
+        HomeStat(title: "Practised", icon: "checkmark.circle.fill")
     ]
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 18) {
                 header
+
                 statsRow
-                startPracticingSection
+
+                sectionDivider
+
+                startPractisingSection
+
                 storyBankCard
+
+                sectionDivider
+
                 recentApplicationsSection
             }
             .padding(.horizontal)
             .padding(.top, 24)
             .padding(.bottom, 120)
         }
+        .background(Color.cream50.ignoresSafeArea())
         .navigationBarHidden(true)
         .onAppear {
             if !hasCompletedNamePrompt,
@@ -46,7 +55,7 @@ struct HomeView: View {
             }
         }
         .alert("Welcome!", isPresented: $showNameAlert) {
-            TextField("Your Name", text: $userName)
+            TextField("Your name", text: $userName)
 
             Button("Not now") {
                 hasCompletedNamePrompt = true
@@ -61,12 +70,19 @@ struct HomeView: View {
         }
     }
 
+    private var sectionDivider: some View {
+        Divider()
+            .overlay(Color.ink200.opacity(0.7))
+            .padding(.vertical, 2)
+    }
+
     private var header: some View {
         HStack(alignment: .center, spacing: 12) {
             ZStack {
                 Circle()
                     .fill(Color.sage100)
                     .frame(width: 48, height: 48)
+
                 Text(initials)
                     .font(.headline)
                     .foregroundStyle(Color.ink900)
@@ -88,50 +104,59 @@ struct HomeView: View {
 
             Spacer()
 
-            Button {
+            NavigationLink {
+                SettingsView()
             } label: {
-                Image(systemName: "bell")
+                Image(systemName: "gearshape")
                     .font(.headline)
                     .foregroundStyle(Color.ink900)
                     .frame(width: 44, height: 44)
                     .background(Color.surfaceWhite)
                     .clipShape(Circle())
                     .overlay(
-                        Circle()
-                            .stroke(Color.ink200, lineWidth: 1)
+                        Circle().stroke(Color.ink200, lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Notifications")
-            .accessibilityHint("Opens reminder settings")
+            .accessibilityLabel("Settings")
         }
     }
 
+    // ✅ FIX: Always 3 equal-width cards across the screen
     private var statsRow: some View {
-        HStack(spacing: 12) {
-            HomeStatCard(
-                title: statCards[0].title,
-                value: "\(jobsStore.jobs.count)",
-                icon: statCards[0].icon
-            )
+        GeometryReader { geo in
+            let totalSpacing: CGFloat = 12 * 2
+            let cardWidth = (geo.size.width - totalSpacing) / 3
 
-            HomeStatCard(
-                title: statCards[1].title,
-                value: "\(allStories.count)",
-                icon: statCards[1].icon
-            )
+            HStack(spacing: 12) {
+                HomeStatCard(
+                    title: statCards[0].title,
+                    value: "\(allJobs.count)",
+                    icon: statCards[0].icon
+                )
+                .frame(width: cardWidth)
 
-            HomeStatCard(
-                title: statCards[2].title,
-                value: "\(attemptsStore.attempts.count)",
-                icon: statCards[2].icon
-            )
+                HomeStatCard(
+                    title: statCards[1].title,
+                    value: "\(allStories.count)",
+                    icon: statCards[1].icon
+                )
+                .frame(width: cardWidth)
+
+                HomeStatCard(
+                    title: statCards[2].title,
+                    value: "\(attemptsStore.attempts.count)",
+                    icon: statCards[2].icon
+                )
+                .frame(width: cardWidth)
+            }
         }
+        .frame(height: 110)
     }
 
-    private var startPracticingSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "Start Practicing")
+    private var startPractisingSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            SectionHeader(title: "Start Practising", actionTitle: "") { }
 
             CardContainer(backgroundColor: Color.sage100, cornerRadius: 22, showShadow: false) {
                 VStack(alignment: .leading, spacing: 16) {
@@ -157,21 +182,22 @@ struct HomeView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Mock Interview")
+                        Text("Interview Drill")
                             .font(.title3)
                             .fontWeight(.bold)
                             .foregroundStyle(Color.ink900)
                             .lineLimit(1)
                             .minimumScaleFactor(0.85)
 
-                        Text("Practice random questions with AI feedback.")
+                        Text("Practise three random questions to build confidence and improve delivery.")
                             .font(.subheadline)
                             .foregroundStyle(Color.ink600)
                             .lineLimit(2)
                             .minimumScaleFactor(0.9)
                     }
 
-                    PrimaryCTAButton(title: "Start Session", systemImage: "arrow.right") {
+                    // ✅ Use the simplest PrimaryCTAButton signature to avoid init mismatch errors
+                    PrimaryCTAButton("Start Session") {
                         selectedTab = .practice
                     }
                 }
@@ -183,7 +209,7 @@ struct HomeView: View {
         Button {
             selectedTab = .stories
         } label: {
-            CardContainer {
+            CardContainer(showShadow: false) {
                 HStack(spacing: 12) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
@@ -219,8 +245,8 @@ struct HomeView: View {
     }
 
     private var recentApplicationsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SectionHeader(title: "Recent Applications")
+        VStack(alignment: .leading, spacing: 14) {
+            SectionHeader(title: "Recent Applications", actionTitle: "") { }
 
             VStack(spacing: 12) {
                 if recentApplications.isEmpty {
@@ -240,7 +266,6 @@ struct HomeView: View {
                 } else {
                     ForEach(recentApplications) { application in
                         Button {
-                            router.selectedJobID = application.id
                             selectedTab = .jobs
                         } label: {
                             CardContainer(showShadow: false) {
@@ -262,7 +287,7 @@ struct HomeView: View {
                                             .lineLimit(1)
                                             .minimumScaleFactor(0.85)
 
-                                        Text("\(application.companyName) • \(application.locationDetail ?? application.locationType.rawValue)")
+                                        Text("\(application.companyName) • \((application.location ?? "Saved"))")
                                             .font(.subheadline)
                                             .foregroundStyle(Color.ink600)
                                             .lineLimit(1)
@@ -297,17 +322,12 @@ struct HomeView: View {
     private var initials: String {
         let parts = displayName.split(separator: " ")
         let letters = parts.prefix(2).compactMap { $0.first }
-        if letters.isEmpty {
-            return "F"
-        }
+        if letters.isEmpty { return "F" }
         return letters.map { String($0) }.joined()
     }
 
-    private var recentApplications: [JobApplication] {
-        jobsStore.jobs
-            .sorted { $0.dateApplied > $1.dateApplied }
-            .prefix(3)
-            .map { $0 }
+    private var recentApplications: [Job] {
+        allJobs.prefix(3).map { $0 }
     }
 }
 
@@ -349,10 +369,11 @@ private struct HomeStatCard: View {
                     .minimumScaleFactor(0.8)
             }
         }
+        .frame(height: 110)
     }
 }
 
-private extension JobApplication {
+private extension Job {
     var initials: String {
         let parts = companyName.split(separator: " ")
         let letters = parts.prefix(2).compactMap { $0.first }

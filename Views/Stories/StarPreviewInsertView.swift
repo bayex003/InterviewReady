@@ -1,25 +1,25 @@
 import SwiftUI
 
-struct StarDraft: Equatable {
+struct StarPreviewDraft: Equatable {
+    enum Field {
+        case situation
+        case task
+        case action
+        case result
+    }
+    
     var situation: String
     var task: String
     var action: String
     var result: String
 
-    static let empty = StarDraft(situation: "", task: "", action: "", result: "")
+    static let empty = StarPreviewDraft(situation: "", task: "", action: "", result: "")
 
-    static func from(scannedText: String) -> StarDraft {
+    static func from(scannedText: String) -> StarPreviewDraft {
         let lines = scannedText
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-
-        enum Field {
-            case situation
-            case task
-            case action
-            case result
-        }
 
         var currentField: Field?
         var buffers: [Field: [String]] = [:]
@@ -44,10 +44,10 @@ struct StarDraft: Equatable {
         let result = buffers[.result]?.joined(separator: "\n") ?? ""
 
         if [situation, task, action, result].allSatisfy({ $0.isEmpty }) {
-            return StarDraft(situation: scannedText, task: "", action: "", result: "")
+            return StarPreviewDraft(situation: scannedText, task: "", action: "", result: "")
         }
 
-        return StarDraft(situation: situation, task: task, action: action, result: result)
+        return StarPreviewDraft(situation: situation, task: task, action: action, result: result)
     }
 
     private static func matchHeading(in line: String) -> (field: Field, remaining: String)? {
@@ -81,10 +81,10 @@ struct StarDraft: Equatable {
 struct StarPreviewInsertView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @State private var draft: StarDraft
-    let onInsert: (StarDraft) -> Void
+    @State private var draft: StarPreviewDraft
+    let onInsert: (StarPreviewDraft) -> Void
 
-    init(draft: StarDraft, onInsert: @escaping (StarDraft) -> Void) {
+    init(draft: StarPreviewDraft, onInsert: @escaping (StarPreviewDraft) -> Void) {
         _draft = State(initialValue: draft)
         self.onInsert = onInsert
     }
@@ -93,17 +93,24 @@ struct StarPreviewInsertView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    SectionHeader(title: "STAR Preview")
+                    Text("STAR Preview")
+                        .font(.title2).bold()
+                        .foregroundStyle(Color.ink900)
 
                     StarPreviewEditor(label: "Situation", text: $draft.situation)
                     StarPreviewEditor(label: "Task", text: $draft.task)
                     StarPreviewEditor(label: "Action", text: $draft.action)
                     StarPreviewEditor(label: "Result", text: $draft.result)
 
-                    PrimaryCTAButton(title: "Insert into Story", systemImage: "checkmark") {
+                    Button(action: {
                         onInsert(draft)
                         dismiss()
+                    }) {
+                        Label("Insert into Story", systemImage: "checkmark")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.borderedProminent)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)

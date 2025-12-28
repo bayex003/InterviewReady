@@ -15,7 +15,10 @@ class Job {
     var roleTitle: String
     var stage: JobStage
     var dateApplied: Date
+
     var nextInterviewDate: Date?
+    var nextInterviewNotes: String?   // ✅ NEW (optional)
+
     var generalNotes: String
 
     // ✅ V2 (free): Details-only fields
@@ -27,6 +30,10 @@ class Job {
         self.roleTitle = roleTitle
         self.stage = stage
         self.dateApplied = Date()
+
+        self.nextInterviewDate = nil
+        self.nextInterviewNotes = nil   // ✅ NEW default
+
         self.generalNotes = ""
 
         // Defaults for existing/new jobs

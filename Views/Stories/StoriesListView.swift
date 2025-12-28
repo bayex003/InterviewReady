@@ -1,3 +1,6 @@
+// FILE: StoryBankView.swift
+// REPLACE THE ENTIRE FILE CONTENT WITH THIS
+
 import SwiftUI
 import SwiftData
 
@@ -20,19 +23,26 @@ struct StoryBankView: View {
 
     private var filters: [StoryFilter] {
         let tags = StoryStore(stories: stories).allTags
-        let tagFilters = tags.map { StoryFilter(title: $0, value: $0) }
-        return [.all] + tagFilters
+
+        let categories = Array(
+            Set(
+                stories
+                    .map { $0.category.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty && $0.lowercased() != "general" }
+            )
+        ).sorted()
+
+        let combined = Array(Set(tags + categories)).sorted()
+
+        return [.all] + combined.map { StoryFilter(title: $0, value: $0) }
     }
 
     private var filteredStories: [Story] {
         let trimmedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return stories.filter { story in
-            let matchesFilter = selectedFilter.matches(story)
-            guard matchesFilter else { return false }
+            guard selectedFilter.matches(story) else { return false }
 
-            if trimmedSearch.isEmpty {
-                return true
-            }
+            if trimmedSearch.isEmpty { return true }
 
             let normalizedTags = StoryStore.normalizeTags(story.tags)
             let matchesTitle = story.title.localizedCaseInsensitiveContains(trimmedSearch)
@@ -46,7 +56,9 @@ struct StoryBankView: View {
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            ScrollView {
+            Color.cream50.ignoresSafeArea()
+
+            ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 20) {
                     headerSection
 
@@ -64,7 +76,7 @@ struct StoryBankView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
-                .safeAreaPadding(.bottom, 100)
+                .safeAreaPadding(.bottom, 120)
             }
 
             FloatingAddButton {
@@ -91,6 +103,8 @@ struct StoryBankView: View {
         }
     }
 
+    // MARK: - Header
+
     private var headerSection: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 6) {
@@ -105,10 +119,10 @@ struct StoryBankView: View {
 
             Spacer()
 
-            Button {
-                // TODO: hook notifications
+            NavigationLink {
+                SettingsView()
             } label: {
-                Image(systemName: "bell")
+                Image(systemName: "gearshape")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(Color.ink600)
                     .frame(width: 44, height: 44)
@@ -116,9 +130,11 @@ struct StoryBankView: View {
                     .overlay(Circle().stroke(Color.ink200, lineWidth: 1))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Notifications")
+            .accessibilityLabel("Settings")
         }
     }
+
+    // MARK: - Search
 
     private var searchRow: some View {
         CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 18, showShadow: false) {
@@ -132,6 +148,8 @@ struct StoryBankView: View {
             }
         }
     }
+
+    // MARK: - Filters
 
     private var filterRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -149,6 +167,8 @@ struct StoryBankView: View {
         }
     }
 
+    // MARK: - List
+
     private var storiesSection: some View {
         VStack(spacing: 16) {
             ForEach(filteredStories) { story in
@@ -162,17 +182,19 @@ struct StoryBankView: View {
         }
     }
 
+    // MARK: - Empty / No results (matches redesign vibe)
+
     private var emptyStateCard: some View {
-        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
-            VStack(alignment: .center, spacing: 16) {
+        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 24, showShadow: false) {
+            VStack(spacing: 14) {
                 ZStack {
                     Circle()
-                        .fill(Color.ink100)
-                        .frame(width: 64, height: 64)
+                        .fill(Color.sage100.opacity(0.8))
+                        .frame(width: 56, height: 56)
 
-                    Image(systemName: "lightbulb")
-                        .font(.system(size: 28, weight: .semibold))
-                        .foregroundStyle(Color.ink500)
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Color.sage500)
                 }
 
                 Text("Need inspiration?")
@@ -181,17 +203,19 @@ struct StoryBankView: View {
 
                 Text("Try adding a story about a time you handled a tight deadline.")
                     .font(.subheadline)
-                    .foregroundStyle(Color.ink500)
+                    .foregroundStyle(Color.ink600)
                     .multilineTextAlignment(.center)
 
-                PrimaryCTAButton(title: "Write your first story") {
+                PrimaryCTAButton("Write your first story") {
                     handleAddTapped()
                 }
+                .frame(maxWidth: 260)
             }
             .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
         }
         .overlay(
-            RoundedRectangle(cornerRadius: 22)
+            RoundedRectangle(cornerRadius: 24)
                 .stroke(style: StrokeStyle(lineWidth: 1, dash: [6]))
                 .foregroundStyle(Color.ink200)
         )
@@ -212,6 +236,7 @@ struct StoryBankView: View {
     }
 
     // MARK: - Add gating
+
     private func handleAddTapped() {
         if hasReachedFreeLimit {
             showPaywall = true
@@ -231,7 +256,7 @@ private struct StoryFilter: Identifiable, Hashable {
     let title: String
     let value: String?
 
-    static let all = StoryFilter(id: "all", title: "All", value: nil)
+    static let all = StoryFilter(title: "All", value: nil)
 
     init(title: String, value: String?) {
         self.title = title
@@ -244,7 +269,11 @@ private struct StoryFilter: Identifiable, Hashable {
         let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmedValue.isEmpty { return true }
         let normalizedTags = StoryStore.normalizeTags(story.tags)
-        return normalizedTags.contains(where: { $0.localizedCaseInsensitiveContains(trimmedValue) })
+
+        let matchesTags = normalizedTags.contains(where: { $0.localizedCaseInsensitiveContains(trimmedValue) })
+        let matchesCategory = story.category.localizedCaseInsensitiveContains(trimmedValue)
+
+        return matchesTags || matchesCategory
     }
 }
 
@@ -307,3 +336,4 @@ private struct StoryCardView: View {
         }
     }
 }
+

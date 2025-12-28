@@ -1,15 +1,23 @@
+// SettingsView.swift (COMPLETE REPLACEMENT)
+
 import SwiftUI
 import SwiftData
 import StoreKit
 import UIKit
 
+enum ExportFormat: String, CaseIterable, Identifiable {
+    case csv = "CSV"
+    case rawText = "Raw Text"
+
+    var id: String { rawValue }
+    var title: String { rawValue }
+}
+
 struct SettingsView: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.openURL) private var openURL
     @EnvironmentObject private var purchaseManager: PurchaseManager
     @EnvironmentObject private var dataController: AppDataController
-    @EnvironmentObject private var jobsStore: JobsStore
 
     // Preferences
     @AppStorage("isHapticFeedbackEnabled") private var isHapticFeedbackEnabled = true
@@ -19,30 +27,12 @@ struct SettingsView: View {
     @AppStorage("isDailyReminderEnabled") private var isDailyReminderEnabled = false
     @AppStorage("dailyReminderTime") private var dailyReminderTime: Double = 32400 // 9:00 AM
 
-    // Review Prompt
-    @AppStorage("firstLaunchDate") private var firstLaunchDate: Double = 0
-    @AppStorage("savedSessionCount") private var savedSessionCount = 0
-    @AppStorage("hasRequestedReview") private var hasRequestedReview = false
-
-    // Feedback configuration
-    private let supportEmail = "support@example.com"
-    private let privacyPolicyURL = URL(string: "https://example.com/privacy")
-    private let termsURL = URL(string: "https://example.com/terms")
-    private let subscriptionsURL = URL(string: "https://apps.apple.com/account/subscriptions")
-    private let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-    private let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-
     // Alerts
     @State private var showResetConfirmation = false
     @State private var showResetSuccess = false
     @State private var showExportErrorAlert = false
     @State private var showExportSelectionAlert = false
     @State private var showReminderPrompt = false
-    @State private var showSupportCopiedAlert = false
-    @State private var showRestoreAlert = false
-    @State private var showRateEligibilityAlert = false
-
-    @State private var restoreMessage: String = ""
 
     // Paywall
     @State private var showPaywall = false
@@ -54,8 +44,6 @@ struct SettingsView: View {
     @State private var isGeneratingExport = false
     @State private var exportSelection = ExportSelection()
     @State private var exportFormat: ExportFormat = .csv
-
-    // MARK: - Bindings
 
     private var reminderTimeBinding: Binding<Date> {
         Binding(
@@ -69,113 +57,90 @@ struct SettingsView: View {
         )
     }
 
-    // MARK: - Body
-
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.cream50.ignoresSafeArea()
+        ZStack {
+            Color.cream50.ignoresSafeArea()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        headerSection
-                        proSection
-                        preferencesSection
-                        remindersSection
-                        dataManagementSection
-                        supportSection
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
-                    .padding(.bottom, 120)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 22) {
+                    header
+
+                    proCard
+
+                    appPreferencesCard
+
+                    remindersCard
+
+                    dataManagementCard
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 120)
             }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
+        }
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environmentObject(purchaseManager)
+        }
+        .sheet(isPresented: $showExportOptions) {
+            ExportOptionsSheet(
+                selection: $exportSelection,
+                format: $exportFormat,
+                isGenerating: isGeneratingExport,
+                onExport: exportSelectedData
+            )
+        }
+        .sheet(isPresented: $showShareSheet, onDismiss: { shareItems = [] }) {
+            ShareSheet(items: shareItems)
+        }
+        .alert("Clear all data?", isPresented: $showResetConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete Everything", role: .destructive) {
+                resetApp()
             }
-            .sheet(isPresented: $showPaywall) {
-                PaywallView()
-                    .environmentObject(purchaseManager)
+        } message: {
+            Text("This will permanently delete your jobs, stories, questions, and practice attempts. This action cannot be undone.")
+        }
+        .alert("Data Cleared", isPresented: $showResetSuccess) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Your app has been reset to a clean state.")
+        }
+        .alert("Select at least one item", isPresented: $showExportSelectionAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Choose at least one data type to export.")
+        }
+        .alert("Export failed", isPresented: $showExportErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("We couldn’t generate the export files. Please try again.")
+        }
+        .alert("Enable daily reminder?", isPresented: $showReminderPrompt) {
+            Button("Not Now", role: .cancel) {
+                isDailyReminderEnabled = false
+                scheduleNotification()
             }
-            .sheet(isPresented: $showExportOptions) {
-                ExportOptionsSheet(
-                    selection: $exportSelection,
-                    format: $exportFormat,
-                    isGenerating: isGeneratingExport,
-                    onExport: exportSelectedData
-                )
-            }
-            .sheet(isPresented: $showShareSheet, onDismiss: {
-                shareItems = []
-            }) {
-                ShareSheet(items: shareItems)
-            }
-            .alert("Clear all data?", isPresented: $showResetConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Delete Everything", role: .destructive) {
-                    resetApp()
-                }
-            } message: {
-                Text("This will permanently delete your jobs, stories, questions, and practice attempts. This action cannot be undone.")
-            }
-            .alert("Data Cleared", isPresented: $showResetSuccess) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("Your app has been reset to a clean state.")
-            }
-            .alert("Select at least one item", isPresented: $showExportSelectionAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("Choose at least one data type to export.")
-            }
-            .alert("Export failed", isPresented: $showExportErrorAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("We couldn’t generate the export files. Please try again.")
-            }
-            .alert("Enable daily reminder?", isPresented: $showReminderPrompt) {
-                Button("Not Now", role: .cancel) {
-                    isDailyReminderEnabled = false
-                    scheduleNotification()
-                }
-                Button("Allow Reminders") {
-                    NotificationManager.shared.requestPermission { granted in
-                        if granted {
-                            scheduleNotification()
-                        } else {
-                            isDailyReminderEnabled = false
-                        }
+            Button("Allow Reminders") {
+                NotificationManager.shared.requestPermission { granted in
+                    if granted {
+                        scheduleNotification()
+                    } else {
+                        isDailyReminderEnabled = false
                     }
                 }
-            } message: {
-                Text("InterviewReady can send a daily practice reminder at your chosen time.")
             }
-            .alert("Support email copied", isPresented: $showSupportCopiedAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("We copied \(supportEmail) to your clipboard.")
-            }
-            .alert("Restore Purchases", isPresented: $showRestoreAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(restoreMessage)
-            }
-            .alert("Rate InterviewReady", isPresented: $showRateEligibilityAlert) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("Rate requests unlock after 3 saved sessions or 7 days of use.")
-            }
+        } message: {
+            Text("InterviewReady can send a daily practice reminder at your chosen time.")
         }
     }
 
-    // MARK: - Sections
+    // MARK: - UI
 
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Settings")
                 .font(.largeTitle.bold())
                 .foregroundStyle(Color.ink900)
@@ -186,19 +151,34 @@ struct SettingsView: View {
         }
     }
 
-    private var proSection: some View {
+    private var proCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Pro")
+            Text("Pro")
+                .font(.headline)
+                .foregroundStyle(Color.ink900)
 
             CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(alignment: .top, spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.sage100)
+                                .frame(width: 48, height: 48)
+
                             Image(systemName: "sparkles")
+                                .font(.system(size: 18, weight: .semibold))
                                 .foregroundStyle(Color.sage500)
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(purchaseManager.isPro ? "InterviewReady Pro" : "Unlock Pro Features")
                                 .font(.headline)
                                 .foregroundStyle(Color.ink900)
+
+                            Text("Get unlimited practice questions, AI feedback, and export your career stories.")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.ink600)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
 
                         Spacer()
@@ -206,57 +186,32 @@ struct SettingsView: View {
                         Chip(title: purchaseManager.isPro ? "Active" : "Pro", isSelected: true)
                     }
 
-                    Text("Get unlimited practice questions, AI feedback, and export your career stories.")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.ink600)
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("What Pro unlocks")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.ink900)
-
-                        ProUnlockRow(text: "Export your stories and practice data")
-                        ProUnlockRow(text: "Attempt history and progress tracking")
-                        ProUnlockRow(text: "Scan handwritten notes into stories")
-                        ProUnlockRow(text: "iCloud sync and backups")
-                    }
-
-                    PrimaryCTAButton(title: purchaseManager.isPro ? "Manage Subscription" : "Upgrade to Pro", systemImage: "chevron.right") {
-                        if purchaseManager.isPro, let subscriptionsURL {
-                            openURL(subscriptionsURL)
-                        } else {
-                            showPaywall = true
-                        }
-                    }
-
-                    HStack(spacing: 12) {
-                        Button("Restore Purchases") {
-                            restorePurchases()
-                        }
-                        .buttonStyle(.bordered)
-                        .tint(Color.sage500)
-
-                        Button("Manage Subscription") {
-                            if let subscriptionsURL {
-                                openURL(subscriptionsURL)
+                    if purchaseManager.isPro {
+                        PrimaryCTAButton(title: "Manage Subscription", systemImage: "chevron.right") {
+                            if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                                openURL(url)
                             }
                         }
-                        .buttonStyle(.bordered)
-                        .tint(Color.sage500)
+                    } else {
+                        PrimaryCTAButton(title: "Upgrade to Pro") {
+                            showPaywall = true
+                        }
                     }
                 }
             }
         }
     }
 
-    private var preferencesSection: some View {
+    private var appPreferencesCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "App Preferences")
+            Text("App Preferences")
+                .font(.headline)
+                .foregroundStyle(Color.ink900)
 
             CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
                 VStack(spacing: 12) {
                     SettingsRow(icon: "wave.3.right", title: "Haptic Feedback") {
-                        Toggle("Haptic Feedback", isOn: $isHapticFeedbackEnabled)
+                        Toggle("", isOn: $isHapticFeedbackEnabled)
                             .labelsHidden()
                             .tint(Color.sage500)
                     }
@@ -264,7 +219,7 @@ struct SettingsView: View {
                     Divider().opacity(0.6)
 
                     SettingsRow(icon: "circle.lefthalf.filled", title: "System Theme Match") {
-                        Toggle("System Theme Match", isOn: $isSystemThemeMatchEnabled)
+                        Toggle("", isOn: $isSystemThemeMatchEnabled)
                             .labelsHidden()
                             .tint(Color.sage500)
                     }
@@ -273,14 +228,16 @@ struct SettingsView: View {
         }
     }
 
-    private var remindersSection: some View {
+    private var remindersCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Reminders")
+            Text("Reminders")
+                .font(.headline)
+                .foregroundStyle(Color.ink900)
 
             CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
                 VStack(spacing: 12) {
                     SettingsRow(icon: "bell", title: "Daily Practice") {
-                        Toggle("Daily Practice", isOn: $isDailyReminderEnabled)
+                        Toggle("", isOn: $isDailyReminderEnabled)
                             .labelsHidden()
                             .tint(Color.sage500)
                             .onChange(of: isDailyReminderEnabled) { _, newValue in
@@ -296,7 +253,7 @@ struct SettingsView: View {
                         Divider().opacity(0.6)
 
                         SettingsRow(icon: "clock", title: "Reminder Time") {
-                            DatePicker("Time", selection: reminderTimeBinding, displayedComponents: .hourAndMinute)
+                            DatePicker("", selection: reminderTimeBinding, displayedComponents: .hourAndMinute)
                                 .labelsHidden()
                         }
                     }
@@ -305,9 +262,11 @@ struct SettingsView: View {
         }
     }
 
-    private var dataManagementSection: some View {
+    private var dataManagementCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Data Management")
+            Text("Data Management")
+                .font(.headline)
+                .foregroundStyle(Color.ink900)
 
             CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
                 VStack(spacing: 12) {
@@ -341,109 +300,7 @@ struct SettingsView: View {
         }
     }
 
-    private var supportSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Support & About")
-
-            CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
-                VStack(spacing: 12) {
-                    Button {
-                        handleSupportContact()
-                    } label: {
-                        SettingsRow(icon: "envelope", title: "Contact Support") {
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(Color.ink400)
-                        }
-                    }
-                    .buttonStyle(.plain)
-
-                    Divider().opacity(0.6)
-
-                    Button {
-                        requestReview()
-                    } label: {
-                        SettingsRow(icon: "star", title: "Rate InterviewReady") {
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(Color.ink400)
-                        }
-                    }
-                    .buttonStyle(.plain)
-
-                    Divider().opacity(0.6)
-
-                    if let privacyPolicyURL {
-                        Link(destination: privacyPolicyURL) {
-                            SettingsRow(icon: "hand.raised", title: "Privacy Policy") {
-                                Image(systemName: "chevron.right")
-                                    .foregroundStyle(Color.ink400)
-                            }
-                        }
-                        .buttonStyle(.plain)
-
-                        Divider().opacity(0.6)
-                    }
-
-                    if let termsURL {
-                        Link(destination: termsURL) {
-                            SettingsRow(icon: "doc.text", title: "Terms of Use") {
-                                Image(systemName: "chevron.right")
-                                    .foregroundStyle(Color.ink400)
-                            }
-                        }
-                        .buttonStyle(.plain)
-
-                        Divider().opacity(0.6)
-                    }
-
-                    SettingsRow(icon: "info.circle", title: "App Version") {
-                        Text("Version \(appVersion) (Build \(buildNumber))")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.ink500)
-                    }
-
-                    Divider().opacity(0.6)
-
-                    SettingsRow(icon: "icloud", title: "iCloud Sync") {
-                        Text(purchaseManager.isPro && dataController.isUsingCloud ? "On" : "Off")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.ink500)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Helpers
-
-    private func handleSupportContact() {
-        if let url = supportMailURL, UIApplication.shared.canOpenURL(url) {
-            openURL(url)
-        } else {
-            UIPasteboard.general.string = supportEmail
-            showSupportCopiedAlert = true
-        }
-    }
-
-    private func requestReview() {
-        guard canRequestReview else {
-            showRateEligibilityAlert = true
-            return
-        }
-
-        SKStoreReviewController.requestReview()
-        hasRequestedReview = true
-    }
-
-    private var canRequestReview: Bool {
-        guard !hasRequestedReview else { return false }
-        let daysSinceLaunch = max(0, Date().timeIntervalSince1970 - firstLaunchDate) / 86400
-        return savedSessionCount >= 3 || daysSinceLaunch >= 7
-    }
-
-    private var supportMailURL: URL? {
-        let mailto = "mailto:\(supportEmail)?subject=InterviewReady%20Support%20(v\(appVersion))"
-        return URL(string: mailto)
-    }
+    // MARK: - Actions
 
     private func scheduleNotification() {
         let date = Date(timeIntervalSince1970: dailyReminderTime)
@@ -457,7 +314,10 @@ struct SettingsView: View {
             try modelContext.delete(model: Question.self)
             try modelContext.delete(model: PracticeAttempt.self)
             try modelContext.save()
-            jobsStore.removeAll()
+
+            // ✅ Clear legacy JobsStore persisted cache without referencing JobsStore at all
+            UserDefaults.standard.removeObject(forKey: "jobs_store_v1")
+
             showResetSuccess = true
         } catch {
             print("Failed to reset: \(error)")
@@ -472,55 +332,323 @@ struct SettingsView: View {
         }
 
         isGeneratingExport = true
+        Task {
+            await exportSelectedDataAsync()
+        }
+    }
 
-        if let exportURLs = DataExportManager.generateExportFiles(
-            context: modelContext,
-            jobs: jobsStore.jobs,
-            includeStories: exportSelection.includeStories,
-            includeAttempts: exportSelection.includeAttempts,
-            includeJobs: exportSelection.includeJobs,
-            includeQuestions: exportSelection.includeQuestions,
-            format: exportFormat
-        ) {
-            shareItems = exportURLs
-            showExportOptions = false
-            DispatchQueue.main.async {
-                showShareSheet = true
+    @MainActor
+    private func exportSelectedDataAsync() async {
+        defer { isGeneratingExport = false }
+
+        do {
+            let exportDirectory = try makeExportDirectory()
+
+            // ✅ Fetch in small, separate calls (prevents type-checker meltdown)
+            let stories = try fetchStoriesIfNeeded()
+            let (questions, questionById) = try fetchQuestionsIfNeeded()
+            let attempts = try fetchAttemptsIfNeeded()
+            let jobs = try fetchJobsIfNeeded()
+
+            let urls = try buildExportFiles(
+                exportDirectory: exportDirectory,
+                stories: stories,
+                questions: questions,
+                questionById: questionById,
+                attempts: attempts,
+                jobs: jobs
+            )
+
+            guard !urls.isEmpty else {
+                showExportErrorAlert = true
+                return
             }
-        } else {
+
+            shareItems = urls
+            showExportOptions = false
+            showShareSheet = true
+        } catch {
+            print("Export failed: \(error)")
             showExportErrorAlert = true
         }
-
-        isGeneratingExport = false
     }
 
-    private func restorePurchases() {
-        Task {
-            await purchaseManager.restore()
-            if purchaseManager.isPro {
-                restoreMessage = "Your purchases have been restored."
-            } else {
-                restoreMessage = "No purchases were found to restore."
+    // MARK: - Export helpers (ADD these below exportSelectedDataAsync)
+
+    @MainActor
+    private func makeExportDirectory() throws -> URL {
+        let exportDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("InterviewReadyExport_\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: exportDirectory, withIntermediateDirectories: true)
+        return exportDirectory
+    }
+
+    @MainActor
+    private func fetchStoriesIfNeeded() throws -> [Story] {
+        guard exportSelection.includeStories else { return [] }
+        return try modelContext.fetch(
+            FetchDescriptor<Story>(sortBy: [SortDescriptor(\.lastUpdated, order: .reverse)])
+        )
+    }
+
+    @MainActor
+    private func fetchQuestionsIfNeeded() throws -> (questions: [Question], questionById: [UUID: Question]) {
+        guard exportSelection.includeQuestions || exportSelection.includeAttempts else {
+            return ([], [:])
+        }
+        let questions = try modelContext.fetch(
+            FetchDescriptor<Question>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
+        )
+        let questionById = Dictionary(uniqueKeysWithValues: questions.map { ($0.id, $0) })
+        return (questions, questionById)
+    }
+
+    @MainActor
+    private func fetchAttemptsIfNeeded() throws -> [PracticeAttempt] {
+        guard exportSelection.includeAttempts else { return [] }
+        return try modelContext.fetch(
+            FetchDescriptor<PracticeAttempt>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+        )
+    }
+
+    @MainActor
+    private func fetchJobsIfNeeded() throws -> [Job] {
+        guard exportSelection.includeJobs else { return [] }
+        return try modelContext.fetch(
+            FetchDescriptor<Job>(sortBy: [SortDescriptor(\.dateApplied, order: .reverse)])
+        )
+    }
+
+    @MainActor
+    private func buildExportFiles(
+        exportDirectory: URL,
+        stories: [Story],
+        questions: [Question],
+        questionById: [UUID: Question],
+        attempts: [PracticeAttempt],
+        jobs: [Job]
+    ) throws -> [URL] {
+        var urls: [URL] = []
+
+        switch exportFormat {
+        case .csv:
+            if exportSelection.includeStories {
+                let headers = ["story_id","title","tags","category","situation","task","action","result","notes","updated_at"]
+                let rows = stories.map { s in
+                    [
+                        String(describing: s.id),
+                        s.title,
+                        StoryStore.sortedTags(s.tags).joined(separator: ", "),
+                        s.category,
+                        s.situation,
+                        s.task,
+                        s.action,
+                        s.result,
+                        s.notes,
+                        isoString(s.lastUpdated)
+                    ]
+                }
+                if let url = writeCSV(fileName: "interviewready_stories.csv", headers: headers, rows: rows, to: exportDirectory) {
+                    urls.append(url)
+                }
             }
-            showRestoreAlert = true
+
+            if exportSelection.includeAttempts {
+                let headers = ["attempt_id","timestamp","duration_seconds","mode","question_id","question_text","category","notes_or_transcript","rating"]
+                let rows = attempts.map { a in
+                    let q = a.questionId.flatMap { questionById[$0] }
+                    return [
+                        String(describing: a.id),
+                        isoString(a.createdAt),
+                        a.durationSeconds.map(String.init) ?? "",
+                        a.source,
+                        a.questionId.map { String(describing: $0) } ?? "",
+                        a.questionTextSnapshot,
+                        q?.category ?? "",
+                        a.notes ?? "",
+                        a.confidence.map(String.init) ?? ""
+                    ]
+                }
+                if let url = writeCSV(fileName: "interviewready_attempts.csv", headers: headers, rows: rows, to: exportDirectory) {
+                    urls.append(url)
+                }
+            }
+
+            if exportSelection.includeJobs {
+                let headers = ["job_id","company","role","stage","location","salary","date_applied","next_interview","notes"]
+                let rows = jobs.map { j in
+                    [
+                        String(describing: j.id),
+                        j.companyName,
+                        j.roleTitle,
+                        j.stage.rawValue,
+                        j.location ?? "",
+                        j.salary ?? "",
+                        isoString(j.dateApplied),
+                        j.nextInterviewDate.map(isoString) ?? "",
+                        j.generalNotes
+                    ]
+                }
+                if let url = writeCSV(fileName: "interviewready_jobs.csv", headers: headers, rows: rows, to: exportDirectory) {
+                    urls.append(url)
+                }
+            }
+
+            if exportSelection.includeQuestions {
+                let headers = ["question_id","question_text","category","is_user_created","updated_at"]
+                let rows = questions
+                    .filter { $0.isCustom }
+                    .map { q in
+                        [
+                            String(describing: q.id),
+                            q.text,
+                            q.category,
+                            q.isCustom ? "true" : "false",
+                            isoString(q.updatedAt)
+                        ]
+                    }
+
+                if let url = writeCSV(fileName: "interviewready_questions.csv", headers: headers, rows: rows, to: exportDirectory) {
+                    urls.append(url)
+                }
+            }
+
+        case .rawText:
+            let text = buildRawTextExport(
+                jobs: jobs,
+                stories: stories,
+                attempts: attempts,
+                questions: questions.filter { $0.isCustom },
+                questionById: questionById,
+                includeJobs: exportSelection.includeJobs,
+                includeStories: exportSelection.includeStories,
+                includeAttempts: exportSelection.includeAttempts,
+                includeQuestions: exportSelection.includeQuestions
+            )
+
+            let fileURL = exportDirectory.appendingPathComponent("interviewready_export.txt")
+            try text.write(to: fileURL, atomically: true, encoding: .utf8)
+            urls = [fileURL]
         }
+
+        return urls
+    }
+
+
+    // MARK: - Export Helpers
+
+    private func isoString(_ date: Date) -> String {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f.string(from: date)
+    }
+
+    private func buildRawTextExport(
+        jobs: [Job],
+        stories: [Story],
+        attempts: [PracticeAttempt],
+        questions: [Question],
+        questionById: [UUID: Question],
+        includeJobs: Bool,
+        includeStories: Bool,
+        includeAttempts: Bool,
+        includeQuestions: Bool
+    ) -> String {
+        let df = DateFormatter()
+        df.dateStyle = .medium
+        df.timeStyle = .short
+
+        var out: [String] = []
+        out.append("InterviewReady Export")
+        out.append("Generated: \(df.string(from: Date()))")
+        out.append("")
+
+        if includeJobs {
+            out.append("JOBS")
+            if jobs.isEmpty { out.append("No jobs available\n") }
+            for (i, j) in jobs.enumerated() {
+                out.append("\(i + 1)) \(j.companyName) — \(j.roleTitle)")
+                out.append("Stage: \(j.stage.rawValue)")
+                out.append("Location: \(j.location ?? "None")")
+                out.append("Salary: \(j.salary ?? "None")")
+                out.append("Applied: \(isoString(j.dateApplied))")
+                out.append("Next Interview: \(j.nextInterviewDate.map(isoString) ?? "None")")
+                out.append("")
+            }
+        }
+
+        if includeStories {
+            out.append("STORIES")
+            if stories.isEmpty { out.append("No stories available\n") }
+            for (i, s) in stories.enumerated() {
+                out.append("\(i + 1)) \(s.title)")
+                out.append("Tags: \(StoryStore.sortedTags(s.tags).joined(separator: ", "))")
+                out.append("Category: \(s.category)")
+                out.append("Updated: \(isoString(s.lastUpdated))")
+                out.append("")
+            }
+        }
+
+        if includeAttempts {
+            out.append("ATTEMPTS")
+            if attempts.isEmpty { out.append("No attempts available\n") }
+            for (i, a) in attempts.enumerated() {
+                let q = a.questionId.flatMap { questionById[$0] }
+                out.append("\(i + 1)) \(isoString(a.createdAt))")
+                out.append("Mode: \(a.source)")
+                out.append("Question: \(a.questionTextSnapshot)")
+                out.append("Category: \(q?.category ?? "None")")
+                out.append("Duration: \(a.durationSeconds.map(String.init) ?? "None")s")
+                out.append("Rating: \(a.confidence.map(String.init) ?? "None")")
+                out.append("Notes: \(a.notes ?? "None")")
+                out.append("")
+            }
+        }
+
+        if includeQuestions {
+            out.append("QUESTIONS")
+            if questions.isEmpty { out.append("No questions available\n") }
+            for (i, q) in questions.enumerated() {
+                out.append("\(i + 1)) \(q.text)")
+                out.append("Category: \(q.category)")
+                out.append("Updated: \(isoString(q.updatedAt))")
+                out.append("")
+            }
+        }
+
+        return out.joined(separator: "\n")
+    }
+
+    private func writeCSV(
+        fileName: String,
+        headers: [String],
+        rows: [[String]],
+        to directory: URL
+    ) -> URL? {
+        var lines: [String] = []
+        lines.append(headers.map(csvEscaped).joined(separator: ","))
+        for row in rows {
+            lines.append(row.map(csvEscaped).joined(separator: ","))
+        }
+        let csv = lines.joined(separator: "\n")
+        let url = directory.appendingPathComponent(fileName)
+        do {
+            try csv.write(to: url, atomically: true, encoding: .utf8)
+            return url
+        } catch {
+            print("Failed to write CSV: \(error)")
+            return nil
+        }
+    }
+
+    private func csvEscaped(_ value: String) -> String {
+        let needsQuotes = value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r")
+        let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+        return needsQuotes ? "\"\(escaped)\"" : escaped
     }
 }
 
-private struct ProUnlockRow: View {
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(Color.sage500)
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(Color.ink700)
-            Spacer()
-        }
-    }
-}
+// MARK: - Small UI pieces
 
 private struct SettingsRow<Accessory: View>: View {
     let icon: String
@@ -554,8 +682,8 @@ private struct SettingsRow<Accessory: View>: View {
 private struct ExportSelection {
     var includeStories = true
     var includeAttempts = true
-    var includeJobs = false
-    var includeQuestions = false
+    var includeJobs = true
+    var includeQuestions = true
 
     var hasSelection: Bool {
         includeStories || includeAttempts || includeJobs || includeQuestions
@@ -573,8 +701,8 @@ private struct ExportOptionsSheet: View {
             ZStack {
                 Color.cream50.ignoresSafeArea()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 18) {
                         SectionHeader(title: "Export Options")
 
                         CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
@@ -593,8 +721,8 @@ private struct ExportOptionsSheet: View {
 
                         CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
                             Picker("Export Format", selection: $format) {
-                                ForEach(ExportFormat.allCases) { exportFormat in
-                                    Text(exportFormat.title).tag(exportFormat)
+                                ForEach(ExportFormat.allCases) { f in
+                                    Text(f.title).tag(f)
                                 }
                             }
                             .pickerStyle(.segmented)
@@ -621,9 +749,7 @@ private struct ExportCheckboxRow: View {
     @Binding var isOn: Bool
 
     var body: some View {
-        Button {
-            isOn.toggle()
-        } label: {
+        Button { isOn.toggle() } label: {
             HStack {
                 Image(systemName: isOn ? "checkmark.square.fill" : "square")
                     .foregroundStyle(isOn ? Color.sage500 : Color.ink400)
@@ -636,3 +762,4 @@ private struct ExportCheckboxRow: View {
         .buttonStyle(.plain)
     }
 }
+

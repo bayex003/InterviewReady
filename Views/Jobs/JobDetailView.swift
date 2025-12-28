@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct JobDetailView: View {
+struct JobDetailFormView: View {
     @Bindable var job: Job
 
     var body: some View {
@@ -87,7 +87,7 @@ struct JobDetailView: View {
         }
         .navigationTitle("Job Details")
         .navigationBarTitleDisplayMode(.inline)
-        .formKeyboardBehavior()
+        .scrollDismissesKeyboard(.interactively)
     }
 }
 

@@ -18,6 +18,7 @@ struct ScanInsertPickerView: View {
     // Track what field we inserted into (so we can disable + show feedback)
     @State private var lastInsertedField: Field?
 
+    // ✅ MUST be module-visible (NOT private) so other views can reference it
     enum Field: String, CaseIterable, Identifiable {
         case situation = "Situation"
         case task = "Task"
@@ -120,7 +121,6 @@ struct ScanInsertPickerView: View {
         let existing = normalised(field.wrappedValue)
         let incoming = normalised(newText)
 
-        // If the exact OCR block already exists (even with whitespace differences), do nothing.
         if !incoming.isEmpty && existing.contains(incoming) {
             UINotificationFeedbackGenerator().notificationOccurred(.warning)
             lastInsertedField = targetField
@@ -130,7 +130,6 @@ struct ScanInsertPickerView: View {
         if field.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             field.wrappedValue = newText
         } else {
-            // Append with spacing once
             field.wrappedValue += "\n\n" + newText
         }
 
@@ -140,29 +139,21 @@ struct ScanInsertPickerView: View {
 
     private func binding(for field: Field) -> Binding<String>? {
         switch field {
-        case .situation:
-            return $situation
-        case .task:
-            return $task
-        case .action:
-            return $action
-        case .result:
-            return $result
-        case .notes:
-            return $notes
-        case .manualDraft:
-            return $manualDraft
+        case .situation: return $situation
+        case .task: return $task
+        case .action: return $action
+        case .result: return $result
+        case .notes: return $notes
+        case .manualDraft: return $manualDraft
         }
     }
 
     /// Collapses multiple spaces/newlines so OCR formatting differences don’t bypass duplicate detection.
     private func normalised(_ text: String) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // Replace all whitespace runs (spaces/newlines/tabs) with a single space
         let components = trimmed.components(separatedBy: .whitespacesAndNewlines)
         let compact = components.filter { !$0.isEmpty }.joined(separator: " ")
-
         return compact.lowercased()
     }
 }
+

@@ -7,6 +7,7 @@ struct NewStoryView: View {
     @EnvironmentObject private var purchaseManager: PurchaseManager
 
     @Query(sort: \Story.lastUpdated, order: .reverse) private var stories: [Story]
+    @Query(sort: \Job.dateApplied, order: .reverse) private var jobs: [Job]
 
     let story: Story?
 
@@ -18,16 +19,18 @@ struct NewStoryView: View {
     @State private var result: String
     @State private var notes: String
     @State private var manualScanDraft: String
+    
 
-    @State private var selectedJob: String?
+    @State private var selectedJob: Job?
 
     @State private var newTagName = ""
+    @State private var isAddTagPresented = false
 
     // Scan flow
     @State private var isProcessingScan = false
     @State private var scannedText = ""
     @State private var scanInsertFields: [ScanInsertPickerView.Field] = []
-    @State private var starDraft = StarDraft.empty
+    @State private var starDraft = StarPreviewDraft.empty
 
     // Single-sheet state (prevents sheet stacking / jank)
     @State private var activeSheet: ActiveSheet?
@@ -46,6 +49,7 @@ struct NewStoryView: View {
         _result = State(initialValue: story?.result ?? "")
         _notes = State(initialValue: story?.notes ?? "")
         _manualScanDraft = State(initialValue: "")
+        _selectedJob = State(initialValue: story?.linkedJob)
     }
 
     enum ActiveSheet: Identifiable {
@@ -91,19 +95,22 @@ struct NewStoryView: View {
         return StoryStore.sortedTags(combined)
     }
 
+    private var selectedTagsSorted: [String] {
+        StoryStore.sortedTags(Array(selectedTags))
+    }
+
+    private var suggestedTags: [String] {
+        let storeTags = StoryStore.sortedTags(StoryStore(stories: stories).allTags)
+        return storeTags.filter { !selectedTags.contains($0) }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                headerBar
-
                 titleSection
-
                 tagsSection
-
                 scanCard
-
                 starSection
-
                 notesSection
 
                 if !manualScanDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -114,11 +121,24 @@ struct NewStoryView: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)
-            .safeAreaPadding(.bottom, 120)
+            .safeAreaPadding(.bottom, 24)
         }
         .tapToDismissKeyboard()
-        .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle(isEditing ? "Edit Story" : "New Story")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button(isEditing ? "Back" : "Cancel") { dismiss() }
+                    .foregroundStyle(Color.ink500)
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Save") { saveStory() }
+                    .font(.headline)
+                    .foregroundStyle(Color.sage500)
+                    .disabled(!canSave)
+            }
+        }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .paywall:
@@ -128,7 +148,6 @@ struct NewStoryView: View {
             case .scanner:
                 DocumentScannerView(
                     onSuccess: { images in
-                        // Close scanner, then OCR
                         activeSheet = nil
                         runOCR(images: images)
                     },
@@ -150,7 +169,7 @@ struct NewStoryView: View {
                 ScanReviewView(
                     scannedText: scannedText,
                     onAssistSTAR: {
-                        starDraft = StarDraft.from(scannedText: scannedText)
+                        starDraft = StarPreviewDraft.from(scannedText: scannedText)
                         activeSheet = .starPreview
                     },
                     onRawNotes: {
@@ -164,12 +183,16 @@ struct NewStoryView: View {
                 )
 
             case .starPreview:
-                StarPreviewInsertView(draft: starDraft) { updatedDraft in
-                    situation = updatedDraft.situation
-                    task = updatedDraft.task
-                    action = updatedDraft.action
-                    result = updatedDraft.result
-                }
+                StarPreviewInsertView(
+                    draft: starDraft,
+                    onInsert: { updatedDraft in
+                        situation = updatedDraft.situation
+                        task = updatedDraft.task
+                        action = updatedDraft.action
+                        result = updatedDraft.result
+                        activeSheet = nil
+                    }
+                )
 
             case .insertPicker:
                 ScanInsertPickerView(
@@ -190,30 +213,6 @@ struct NewStoryView: View {
                 message: Text(alert.message),
                 dismissButton: .default(Text("OK"))
             )
-        }
-    }
-
-    private var headerBar: some View {
-        HStack {
-            Button(isEditing ? "Back" : "Cancel") {
-                dismiss()
-            }
-            .foregroundStyle(Color.ink500)
-
-            Spacer()
-
-            Text(isEditing ? "Edit Story" : "New Story")
-                .font(.headline)
-                .foregroundStyle(Color.ink900)
-
-            Spacer()
-
-            Button("Save") {
-                saveStory()
-            }
-            .font(.headline)
-            .foregroundStyle(Color.sage500)
-            .disabled(!canSave)
         }
     }
 
@@ -240,57 +239,66 @@ struct NewStoryView: View {
 
     private var tagsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("TAGS")
-                .font(.caption)
-                .foregroundStyle(Color.ink500)
+            HStack {
+                Text("TAGS")
+                    .font(.caption)
+                    .foregroundStyle(Color.ink500)
 
-            HStack(spacing: 8) {
-                TextField("Add tag", text: $newTagName)
-                    .font(.subheadline)
-                    .foregroundStyle(Color.ink900)
-                    .submitLabel(.done)
-                    .onSubmit {
-                        addNewTag()
+                Spacer()
+
+                Button {
+                    newTagName = ""
+                    isAddTagPresented = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus")
+                        Text("Add Tag")
                     }
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(Color.surfaceWhite)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color.ink200, lineWidth: 1)
-                    )
-
-                Button("Add") {
-                    addNewTag()
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.sage500)
                 }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.sage500)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(Color.sage100.opacity(0.2))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.sage500.opacity(0.4), lineWidth: 1)
-                )
+                .buttonStyle(.plain)
             }
 
+            // Selected tags (removable)
+            if !selectedTags.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(selectedTagsSorted, id: \.self) { tag in
+                            SelectedTagChip(title: tag) {
+                                toggleTag(tag)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Suggested/existing tags (tap to select)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    ForEach(availableTags, id: \.self) { tag in
-                        Chip(title: tag, isSelected: selectedTags.contains(tag)) {
+                    ForEach(suggestedTags, id: \.self) { tag in
+                        SuggestedTagChip(title: tag) {
                             toggleTag(tag)
                         }
                     }
                 }
             }
         }
+        .alert("Add tag", isPresented: $isAddTagPresented) {
+            TextField("Tag name", text: $newTagName)
+
+            Button("Cancel", role: .cancel) {
+                newTagName = ""
+            }
+
+            Button("Add") {
+                addNewTag()
+            }
+        } message: {
+            Text("Create a custom tag for this story.")
+        }
     }
+
 
     private var scanCard: some View {
         Button {
@@ -343,8 +351,7 @@ struct NewStoryView: View {
     private var starSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                SectionHeader(title: "The STAR Method")
-
+                StorySectionHeader(title: "The STAR Method")
                 Image(systemName: "info.circle")
                     .foregroundStyle(Color.ink400)
                     .accessibilityHidden(true)
@@ -402,13 +409,24 @@ struct NewStoryView: View {
                 .foregroundStyle(Color.ink500)
 
             Menu {
-                Button("Select a job application…") {
-                    selectedJob = nil
+                Button("None") { selectedJob = nil }
+
+                if !jobs.isEmpty {
+                    Divider()
+
+                    ForEach(jobs) { job in
+                        Button("\(job.companyName) · \(job.roleTitle)") {
+                            selectedJob = job
+                        }
+                    }
                 }
             } label: {
                 HStack {
-                    Text(selectedJob ?? "Select a job application…")
-                        .foregroundStyle(Color.ink500)
+                    Text(
+                        selectedJob.map { "\($0.companyName) · \($0.roleTitle)" }
+                        ?? "Select a job application…"
+                    )
+                    .foregroundStyle(selectedJob == nil ? Color.ink500 : Color.ink900)
 
                     Spacer()
 
@@ -422,8 +440,16 @@ struct NewStoryView: View {
                         .stroke(Color.ink200, lineWidth: 1)
                 )
             }
+            .disabled(jobs.isEmpty)
+
+            if jobs.isEmpty {
+                Text("No jobs yet. Add a job to link it here.")
+                    .font(.caption)
+                    .foregroundStyle(Color.ink400)
+            }
         }
     }
+
 
     private func toggleTag(_ tag: String) {
         if selectedTags.contains(tag) {
@@ -515,6 +541,7 @@ struct NewStoryView: View {
             story.action = action
             story.result = result
             story.notes = mergedNotes()
+            story.linkedJob = selectedJob
             story.lastUpdated = Date()
         } else {
             let newStory = Story(title: resolvedTitle, category: resolvedCategory)
@@ -523,6 +550,7 @@ struct NewStoryView: View {
             newStory.action = action
             newStory.result = result
             newStory.notes = mergedNotes()
+            newStory.linkedJob = selectedJob
             newStory.lastUpdated = Date()
             modelContext.insert(newStory)
         }
@@ -604,3 +632,72 @@ private struct StarFieldEditor: View {
         }
     }
 }
+private struct StorySectionHeader: View {
+    let title: String
+    var body: some View {
+        Text(title.uppercased())
+            .font(.caption)
+            .foregroundStyle(Color.ink500)
+            .padding(.bottom, 2)
+    }
+}
+
+private struct SelectedTagChip: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                    .foregroundStyle(Color.ink900)
+
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Color.ink700)
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.sage100.opacity(0.75))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.sage500.opacity(0.55), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(title), selected")
+    }
+}
+
+private struct SuggestedTagChip: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .foregroundStyle(Color.ink900)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color.surfaceWhite)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.ink200, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+    }
+}
+
+

@@ -25,7 +25,7 @@ struct PracticeSessionView: View {
     @State private var showStoryPicker = false
 
     private var currentQuestion: QuestionBankItem {
-        questions.indices.contains(currentIndex) ? questions[currentIndex] : .placeholder
+        questions.indices.contains(currentIndex) ? questions[currentIndex] : .empty
     }
 
     private var totalQuestions: Int {
@@ -526,10 +526,9 @@ extension QuestionBankItem {
             id: UUID(),
             text: "Describe a situation where you had to handle a difficult client.",
             category: .behavioral,
-            linkedStories: 0,
-            isAnswered: false,
-            iconName: "message.fill",
-            tags: []
+            isCustom: false
         )
     }
 }
+
+

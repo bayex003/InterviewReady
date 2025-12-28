@@ -1,81 +1,62 @@
 import SwiftUI
 
-// Lightweight tab identifier used by RootContentView's TabView
-enum AppTab: Hashable, CaseIterable, Identifiable {
-    case home
-    case jobs
-    case stories
-    case practice
-
-    var id: Self { self }
-}
-
-// Preference key to communicate whether the floating tab bar should be hidden
-private struct FloatingTabBarHiddenPreferenceKey: PreferenceKey {
-    static var defaultValue: Bool = false
-
-    static func reduce(value: inout Bool, nextValue: () -> Bool) {
-        // ✅ Hide if ANY child requests hiding
-        value = value || nextValue()
-    }
-}
-
-// Convenience modifier to set the preference from child views
-extension View {
-    func floatingTabBarHidden(_ hidden: Bool = true) -> some View {
-        preference(key: FloatingTabBarHiddenPreferenceKey.self, value: hidden)
-    }
-}
-
 struct RootContentView: View {
     @State private var selectedTab: AppTab = .home
+
     @StateObject private var router = AppRouter()
     @StateObject private var attemptsStore = AttemptsStore()
-
-    @State private var isTabBarHidden: Bool = false
+    @StateObject private var jobsStore = JobsStore()
 
     init() {
-        UITabBar.appearance().isHidden = true
+        // ✅ Use native tab bar (NOT hidden)
+        // ✅ Optional: make tab bar background consistent
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(Color.surfaceWhite)
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 
     var body: some View {
-        ZStack {
-            AppBackgroundView()
+        TabView(selection: $selectedTab) {
 
-            TabView(selection: $selectedTab) {
-                NavigationStack {
-                    HomeView(selectedTab: $selectedTab)
-                }
-                .tag(AppTab.home)
-
-                NavigationStack {
-                    JobsListView()
-                }
-                .tag(AppTab.jobs)
-
-                NavigationStack {
-                    StoryBankView()
-                }
-                .tag(AppTab.stories)
-
-                NavigationStack {
-                    QuestionsListView()
-                }
-                .tag(AppTab.practice)
+            NavigationStack {
+                HomeView(selectedTab: $selectedTab)
             }
-            .onPreferenceChange(FloatingTabBarHiddenPreferenceKey.self) { hidden in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isTabBarHidden = hidden
-                }
+            .tag(AppTab.home)
+            .tabItem { Label(AppTab.home.title, systemImage: AppTab.home.systemImage) }
+
+            NavigationStack {
+                JobsListView()
             }
-            .safeAreaInset(edge: .bottom) {
-                if !isTabBarHidden {
-                    FloatingTabBar(selectedTab: $selectedTab)
-                }
+            .tag(AppTab.jobs)
+            .tabItem { Label(AppTab.jobs.title, systemImage: AppTab.jobs.systemImage) }
+
+            NavigationStack {
+                StoryBankView()
             }
-            .ignoresSafeArea(.keyboard)
-            .environmentObject(router)
-            .environmentObject(attemptsStore)
+            .tag(AppTab.stories)
+            .tabItem { Label(AppTab.stories.title, systemImage: AppTab.stories.systemImage) }
+
+            NavigationStack {
+                QuestionsListView()
+            }
+            .tag(AppTab.practice)
+            .tabItem { Label(AppTab.practice.title, systemImage: AppTab.practice.systemImage) }
+
+            NavigationStack {
+                SettingsView()
+            }
+            .tag(AppTab.settings)
+            .tabItem { Label(AppTab.settings.title, systemImage: AppTab.settings.systemImage) }
         }
+        // ✅ Fix the “blue” selection — now it matches your design tokens
+        .tint(Color.sage500)
+
+        // ✅ Shared state
+        .environmentObject(router)
+        .environmentObject(attemptsStore)
+        .environmentObject(jobsStore)
     }
 }

@@ -155,7 +155,9 @@ final class AppDataController: ObservableObject {
                 createdAt: attempt.createdAt,
                 confidence: attempt.confidence,
                 notes: attempt.notes,
-                audioPath: attempt.audioPath
+                audioPath: attempt.audioPath,
+                isFinal: attempt.isFinal,
+                reviewNotes: attempt.reviewNotes
             )
             newAttempt.id = attempt.id
             cloudContext.insert(newAttempt)

@@ -38,6 +38,12 @@ struct NewStoryView: View {
     // Alerts (empty OCR, simulator message, errors)
     @State private var activeAlert: ScanAlert?
 
+    @State private var scanGateMessage: String?
+
+    private var proGate: ProGatekeeper {
+        ProGatekeeper(isPro: { purchaseManager.isPro }, presentPaywall: { activeSheet = .paywall })
+    }
+
     init(story: Story? = nil) {
         self.story = story
         _title = State(initialValue: story?.title ?? "")
@@ -110,6 +116,12 @@ struct NewStoryView: View {
                 titleSection
                 tagsSection
                 scanCard
+
+                if !purchaseManager.isPro {
+                    Text(scanGateMessage ?? ProGate.scanNotes.inlineMessage)
+                        .font(.footnote)
+                        .foregroundStyle(Color.ink500)
+                }
                 starSection
                 notesSection
 
@@ -522,11 +534,14 @@ struct NewStoryView: View {
     private func handleScanTapped() {
         guard !isProcessingScan else { return }
 
-        if !purchaseManager.isPro {
-            activeSheet = .paywall
-            return
+        proGate.requirePro(.scanNotes) {
+            startScanFlow()
+        } onBlocked: {
+            scanGateMessage = ProGate.scanNotes.inlineMessage
         }
+    }
 
+    private func startScanFlow() {
         #if targetEnvironment(simulator)
         activeAlert = ScanAlert(
             title: "Scanner unavailable",
@@ -746,4 +761,3 @@ private struct SuggestedTagChip: View {
         .accessibilityLabel(title)
     }
 }
-

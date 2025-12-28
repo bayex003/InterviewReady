@@ -19,6 +19,8 @@ final class PracticeAttempt {
     var confidence: Int?
     var notes: String?
     var audioPath: String?
+    var isFinal: Bool
+    var reviewNotes: String?
 
     init(
         source: String,
@@ -28,7 +30,9 @@ final class PracticeAttempt {
         createdAt: Date = Date(),
         confidence: Int? = nil,
         notes: String? = nil,
-        audioPath: String? = nil
+        audioPath: String? = nil,
+        isFinal: Bool = false,
+        reviewNotes: String? = nil
     ) {
         self.id = UUID()
         self.createdAt = createdAt
@@ -39,5 +43,7 @@ final class PracticeAttempt {
         self.confidence = confidence
         self.notes = notes
         self.audioPath = audioPath
+        self.isFinal = isFinal
+        self.reviewNotes = reviewNotes
     }
 }

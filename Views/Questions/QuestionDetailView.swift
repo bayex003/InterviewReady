@@ -16,16 +16,34 @@ struct QuestionDetailView: View {
     @EnvironmentObject private var purchaseManager: PurchaseManager
 
     @Query(sort: \PracticeAttempt.createdAt, order: .reverse) private var allAttempts: [PracticeAttempt]
+    @Query private var storyLinks: [QuestionStoryLink]
 
     @State private var showTip = false
     @State private var showExample = false
     @State private var didEditThisSession = false
     @State private var showDeleteConfirmation = false
     @State private var showPracticeSession = false
+    @State private var activeSheet: ActiveSheet?
     @State private var selectedAnswerFilter: AnswerFilter = .all
 
     private let categories = ["General", "Basics", "Behavioural", "Technical", "Strengths", "Weaknesses"]
     private let freeAnswerLimitPerQuestion = 3
+
+    enum ActiveSheet: Identifiable {
+        case paywall
+        case storyPicker
+
+        var id: String {
+            switch self {
+            case .paywall: return "paywall"
+            case .storyPicker: return "storyPicker"
+            }
+        }
+    }
+
+    private var proGate: ProGatekeeper {
+        ProGatekeeper(isPro: { purchaseManager.isPro }, presentPaywall: { activeSheet = .paywall })
+    }
 
     private var canEditCustomQuestion: Bool {
         question.isCustom
@@ -73,6 +91,15 @@ struct QuestionDetailView: View {
 
     private var hasAudioAnswers: Bool {
         savedAttemptsForQuestion.contains { $0.audioPath != nil }
+    }
+
+    private var linkedStoryCount: Int {
+        storyLinks.count
+    }
+
+    init(question: Question) {
+        self.question = question
+        _storyLinks = Query(filter: #Predicate<QuestionStoryLink> { $0.questionId == question.id })
     }
 
     var body: some View {
@@ -139,6 +166,8 @@ struct QuestionDetailView: View {
                     AnalyticsEventLogger.shared.log(.drillStartedSelected)
                     showPracticeSession = true
                 }
+
+                storyLinksSection
 
                 savedAnswersSection
 
@@ -293,6 +322,17 @@ struct QuestionDetailView: View {
         .sheet(isPresented: $showPracticeSession) {
             PracticeSessionView(questions: [QuestionBankItem(question)])
         }
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .paywall:
+                PaywallView()
+                    .environmentObject(purchaseManager)
+            case .storyPicker:
+                StoryLinkPickerView(initialSelection: linkedStoryIds) { selection in
+                    updateStoryLinks(selection)
+                }
+            }
+        }
         .onChange(of: hasAudioAnswers) { _, newValue in
             if !newValue {
                 selectedAnswerFilter = .all
@@ -389,6 +429,91 @@ struct QuestionDetailView: View {
                     .foregroundStyle(Color.ink500)
             }
         }
+    }
+
+    private var storyLinksSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("STORIES")
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.ink600)
+                .padding(.leading, 4)
+
+            CardContainer(showShadow: false) {
+                VStack(spacing: 12) {
+                    Button {
+                        handleLinkStoryTapped()
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "link")
+                                .foregroundStyle(Color.sage500)
+                            Text("Link story")
+                                .font(.headline)
+                                .foregroundStyle(Color.ink900)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Color.ink400)
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.plain)
+
+                    if linkedStoryCount > 0 {
+                        Divider().opacity(0.6)
+
+                        NavigationLink {
+                            LinkedStoriesView(questionId: question.id)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "book")
+                                    .foregroundStyle(Color.ink500)
+                                Text("View linked stories")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(Color.ink700)
+                                Spacer()
+                                Text("\(linkedStoryCount)")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Color.ink400)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if !purchaseManager.isPro {
+                        Text(ProGate.storyLinking.inlineMessage)
+                            .font(.footnote)
+                            .foregroundStyle(Color.ink500)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+        }
+    }
+
+    private var linkedStoryIds: Set<UUID> {
+        Set(storyLinks.map(\.storyId))
+    }
+
+    private func handleLinkStoryTapped() {
+        proGate.requirePro(.storyLinking) {
+            activeSheet = .storyPicker
+        }
+    }
+
+    private func updateStoryLinks(_ selection: Set<UUID>) {
+        let existingIds = linkedStoryIds
+        let toRemove = storyLinks.filter { !selection.contains($0.storyId) }
+        toRemove.forEach { modelContext.delete($0) }
+
+        let toAdd = selection.subtracting(existingIds)
+        toAdd.forEach { storyId in
+            let link = QuestionStoryLink(questionId: question.id, storyId: storyId)
+            modelContext.insert(link)
+        }
+
+        try? modelContext.save()
     }
 
     private func savedAnswerRow(_ attempt: PracticeAttempt) -> some View {

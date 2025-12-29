@@ -342,7 +342,22 @@ struct QuestionsListView: View {
         let isSelected: Bool
         let onTap: () -> Void
 
+        @Query private var links: [QuestionStoryLink]
+
         private let selectionIndicatorWidth: CGFloat = 32
+
+        init(
+            question: Question,
+            isSelecting: Bool,
+            isSelected: Bool,
+            onTap: @escaping () -> Void
+        ) {
+            self.question = question
+            self.isSelecting = isSelecting
+            self.isSelected = isSelected
+            self.onTap = onTap
+            _links = Query(filter: #Predicate<QuestionStoryLink> { $0.questionId == question.id })
+        }
 
         var body: some View {
             CardContainer(showShadow: false) {
@@ -365,6 +380,12 @@ struct QuestionsListView: View {
                         HStack(spacing: 8) {
                             TagChip(title: question.category, isSelected: true)
                             Text("Unanswered")
+                                .font(.caption)
+                                .foregroundStyle(Color.ink500)
+                        }
+
+                        if links.count > 0 {
+                            Text("🔗 \(links.count) \(links.count == 1 ? "Story" : "Stories") Linked")
                                 .font(.caption)
                                 .foregroundStyle(Color.ink500)
                         }

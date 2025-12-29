@@ -10,7 +10,13 @@ final class AppDataController: ObservableObject {
     @Published var loadError: String?
     @Published var isUsingCloud = false
 
-    private let schema = Schema([Job.self, Question.self, Story.self, PracticeAttempt.self])
+    private let schema = Schema([
+        Job.self,
+        Question.self,
+        Story.self,
+        PracticeAttempt.self,
+        QuestionStoryLink.self
+    ])
     private let proKey = "isProUnlocked"
 
     func loadInitialContainer() async {
@@ -100,7 +106,8 @@ final class AppDataController: ObservableObject {
         let storyCount = try context.fetchCount(FetchDescriptor<Story>())
         let questionCount = try context.fetchCount(FetchDescriptor<Question>())
         let attemptCount = try context.fetchCount(FetchDescriptor<PracticeAttempt>())
-        return jobCount + storyCount + questionCount + attemptCount == 0
+        let linkCount = try context.fetchCount(FetchDescriptor<QuestionStoryLink>())
+        return jobCount + storyCount + questionCount + attemptCount + linkCount == 0
     }
 
     private func migrateLocalDataToCloud(
@@ -111,6 +118,7 @@ final class AppDataController: ObservableObject {
         let localStories = try localContext.fetch(FetchDescriptor<Story>())
         let localQuestions = try localContext.fetch(FetchDescriptor<Question>())
         let localAttempts = try localContext.fetch(FetchDescriptor<PracticeAttempt>())
+        let localLinks = try localContext.fetch(FetchDescriptor<QuestionStoryLink>())
 
         for job in localJobs {
             let newJob = Job(companyName: job.companyName, roleTitle: job.roleTitle, stage: job.stage)
@@ -161,6 +169,16 @@ final class AppDataController: ObservableObject {
             )
             newAttempt.id = attempt.id
             cloudContext.insert(newAttempt)
+        }
+
+        for link in localLinks {
+            let newLink = QuestionStoryLink(
+                questionId: link.questionId,
+                storyId: link.storyId,
+                createdAt: link.createdAt
+            )
+            newLink.id = link.id
+            cloudContext.insert(newLink)
         }
 
         try cloudContext.save()

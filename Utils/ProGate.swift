@@ -5,6 +5,7 @@ enum ProGate: String {
     case scanNotes
     case unlimitedAnswers
     case unlimitedCustomQuestions
+    case storyLinking
 
     var title: String {
         switch self {
@@ -18,6 +19,8 @@ enum ProGate: String {
             return "Unlimited answer history"
         case .unlimitedCustomQuestions:
             return "Unlimited custom questions"
+        case .storyLinking:
+            return "Story linking"
         }
     }
 
@@ -33,6 +36,8 @@ enum ProGate: String {
             return "Free keeps up to three answers per question."
         case .unlimitedCustomQuestions:
             return "Free includes up to ten custom questions."
+        case .storyLinking:
+            return "Link stories to questions with Pro."
         }
     }
 }

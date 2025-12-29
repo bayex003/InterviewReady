@@ -111,8 +111,7 @@ struct QuestionsListView: View {
 
     private var attemptsShortcut: some View {
         NavigationLink {
-            AttemptsListView()
-                .environmentObject(attemptsStore)
+            AttemptsListView(attemptsStore: attemptsStore)
         } label: {
             CardContainer(showShadow: false) {
                 HStack(spacing: 12) {
@@ -190,13 +189,16 @@ struct QuestionsListView: View {
     private var questionsSection: some View {
         VStack(spacing: 12) {
             if questions.isEmpty {
+                // TO →
                 EmptyStateCard(
                     systemImage: "text.bubble",
                     title: "Build your question bank",
                     subtitle: "Add custom questions to practise with anytime.",
-                    ctaTitle: "Add a question",
-                    action: { showAddQuestion = true }
+                    ctaTitle: "Add a question"
                 )
+                .contentShape(Rectangle())
+                .onTapGesture { showAddQuestion = true }
+                .accessibilityAddTraits(.isButton)
             } else if filteredQuestions.isEmpty {
                 CardContainer(showShadow: false) {
                     VStack(alignment: .leading, spacing: 6) {

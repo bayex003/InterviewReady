@@ -621,17 +621,24 @@ struct PracticeSessionView: View {
 
     private func enforceAnswerLimitIfNeeded() {
         guard !purchaseManager.isPro else { return }
-        let predicate = #Predicate<PracticeAttempt> {
-            $0.questionId == currentQuestion.id || $0.questionTextSnapshot == currentQuestion.text
-        }
+
+        // Fetch all attempts sorted by creation date and filter in-memory.
         let descriptor = FetchDescriptor<PracticeAttempt>(
-            predicate: predicate,
             sortBy: [SortDescriptor(\.createdAt, order: .forward)]
         )
-        if let existing = try? modelContext.fetch(descriptor), existing.count >= freeAnswerLimitPerQuestion {
-            let overflow = existing.count - (freeAnswerLimitPerQuestion - 1)
-            let toDelete = existing.prefix(max(overflow, 0))
-            toDelete.forEach { modelContext.delete($0) }
+
+        if let fetched = try? modelContext.fetch(descriptor) {
+            let existing = fetched.filter { attempt in
+                let sameId = attempt.questionId == currentQuestion.id
+                let sameText = attempt.questionTextSnapshot == currentQuestion.text
+                return sameId || sameText
+            }
+
+            if existing.count >= freeAnswerLimitPerQuestion {
+                let overflow = existing.count - (freeAnswerLimitPerQuestion - 1)
+                let toDelete = existing.prefix(max(overflow, 0))
+                toDelete.forEach { modelContext.delete($0) }
+            }
         }
     }
 

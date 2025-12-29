@@ -123,16 +123,17 @@ struct JobsListView: View {
         }
     }
 
+    // TO →
     private var emptyStateCard: some View {
         EmptyStateCard(
             systemImage: "briefcase",
             title: "Track a new application",
             subtitle: "Keep all your opportunities in one place.",
-            ctaTitle: "Add application",
-            action: { showAddJob = true },
-            iconBackground: Color.ink200,
-            iconForeground: Color.ink500
+            ctaTitle: "Add application"
         )
+        .contentShape(Rectangle())
+        .onTapGesture { showAddJob = true }
+        .accessibilityAddTraits(.isButton)
     }
 }
 

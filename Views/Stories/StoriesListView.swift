@@ -189,9 +189,10 @@ struct StoryBankView: View {
             systemImage: "lightbulb.fill",
             title: "Need inspiration?",
             subtitle: "Try adding a story about a time you handled a tight deadline.",
-            ctaTitle: "Write your first story",
-            action: { handleAddTapped() }
-        )
+            ctaTitle: "Write your first story"
+        ) {
+            handleAddTapped()
+        }
     }
 
     private var noResultsCard: some View {

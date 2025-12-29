@@ -60,11 +60,10 @@ struct AttemptsListView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(AttemptFilter.allCases) { filter in
-                    Chip(
-                        title: filter.title,
-                        isSelected: selectedFilter == filter,
-                        action: { selectedFilter = filter }
-                    )
+                    // TO →
+                    Chip(title: filter.title, isSelected: selectedFilter == filter) {
+                        selectedFilter = filter
+                    }
                 }
             }
             .padding(.vertical, 4)

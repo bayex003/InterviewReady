@@ -299,19 +299,28 @@ struct QuestionDetailView: View {
         dismiss()
     }
 
+    // TO →
     private func enforceAnswerLimitIfNeeded() {
         guard !purchaseManager.isPro else { return }
+
+        // ✅ Capture values as constants so #Predicate doesn't try to treat `question` as a keypath source.
+        let qid = question.id
+        let qtext = question.text
+
         let predicate = #Predicate<PracticeAttempt> {
-            $0.questionId == question.id || $0.questionTextSnapshot == question.text
+            ($0.questionId == qid) || ($0.questionTextSnapshot == qtext)
         }
+
         let descriptor = FetchDescriptor<PracticeAttempt>(
             predicate: predicate,
             sortBy: [SortDescriptor(\.createdAt, order: .forward)]
         )
+
         if let existing = try? modelContext.fetch(descriptor), existing.count >= freeAnswerLimitPerQuestion {
             let overflow = existing.count - (freeAnswerLimitPerQuestion - 1)
             let toDelete = existing.prefix(max(overflow, 0))
             toDelete.forEach { modelContext.delete($0) }
+            try? modelContext.save()
         }
     }
 
@@ -343,11 +352,8 @@ struct QuestionDetailView: View {
 
             if savedAttemptsForQuestion.isEmpty {
                 EmptyStateCard(
-                    systemImage: "clock.arrow.circlepath",
-                    title: "No answers yet",
-                    subtitle: "Practise this question to save your first response.",
-                    ctaTitle: "Practise now",
-                    action: { showPracticeSession = true }
+                    title: "No saved answers yet",
+                    message: "Your saved answers for this question will appear here after you practise or type an answer."
                 )
             } else {
                 VStack(spacing: 12) {

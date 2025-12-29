@@ -12,6 +12,7 @@
 		F62008952EEDF5FE00B94259 /* AppBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F62008942EEDF5F900B94259 /* AppBackgroundView.swift */; };
 		F690A7852EFE20C000D6407B /* InterviewReadyV2.storekit in Resources */ = {isa = PBXBuildFile; fileRef = F690A7842EFE20C000D6407B /* InterviewReadyV2.storekit */; };
 		F6C950772F00C5AC007B70AD /* NameOnboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C950762F00C59F007B70AD /* NameOnboarding.swift */; };
+		F6D960542F025C9000D69C15 /* BuildFix_MissingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D960532F025C7000D69C15 /* BuildFix_MissingViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +23,7 @@
 		F62008942EEDF5F900B94259 /* AppBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBackgroundView.swift; sourceTree = "<group>"; };
 		F690A7842EFE20C000D6407B /* InterviewReadyV2.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = InterviewReadyV2.storekit; sourceTree = "<group>"; };
 		F6C950762F00C59F007B70AD /* NameOnboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameOnboarding.swift; sourceTree = "<group>"; };
+		F6D960532F025C7000D69C15 /* BuildFix_MissingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildFix_MissingViews.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -42,6 +44,7 @@
 				HomeView.swift,
 				PracticeSessionView.swift,
 				SessionSummaryView.swift,
+				StartDrillSheet.swift,
 			);
 			target = F62008032EEC8DC000B94259 /* InterviewReady */;
 		};
@@ -84,6 +87,9 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				DictationButton.swift,
+				EmptyStateCard.swift,
+				FloatingAddButton.swift,
+				IRComponents.swift,
 			);
 			target = F62008032EEC8DC000B94259 /* InterviewReady */;
 		};
@@ -210,6 +216,7 @@
 		F62008312EEC8FA800B94259 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				F6D960532F025C7000D69C15 /* BuildFix_MissingViews.swift */,
 				F62008792EECE56500B94259 /* Onboarding */,
 				F620083D2EEC902000B94259 /* Stories */,
 				F620083C2EEC901A00B94259 /* Questions */,
@@ -310,6 +317,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6D960542F025C9000D69C15 /* BuildFix_MissingViews.swift in Sources */,
 				F620087B2EECE57E00B94259 /* OnboardingView.swift in Sources */,
 				F6C950772F00C5AC007B70AD /* NameOnboarding.swift in Sources */,
 				F62008132EEC8E1000B94259 /* AppMain.swift in Sources */,

@@ -11,6 +11,7 @@ enum JobStage: String, Codable, CaseIterable {
 
 @Model
 class Job {
+    var id: UUID
     var companyName: String
     var roleTitle: String
     var stage: JobStage
@@ -26,6 +27,7 @@ class Job {
     var location: String?
 
     init(companyName: String, roleTitle: String, stage: JobStage = .saved) {
+        self.id = UUID()
         self.companyName = companyName
         self.roleTitle = roleTitle
         self.stage = stage
@@ -41,4 +43,3 @@ class Job {
         self.location = nil
     }
 }
-

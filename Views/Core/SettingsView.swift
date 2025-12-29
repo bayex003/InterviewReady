@@ -295,20 +295,6 @@ struct SettingsView: View {
                     }
                     .buttonStyle(.plain)
 
-#if DEBUG
-                    Divider().opacity(0.6)
-
-                    Button {
-                        exportAnalyticsLog()
-                    } label: {
-                        SettingsRow(icon: "waveform.path.ecg", title: "Export Analytics Log") {
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(Color.ink400)
-                        }
-                    }
-                    .buttonStyle(.plain)
-#endif
-
                     Divider().opacity(0.6)
 
                     Button(role: .destructive) {
@@ -405,16 +391,6 @@ struct SettingsView: View {
             showShareSheet = true
         } catch {
             print("Export failed: \(error)")
-            showExportErrorAlert = true
-        }
-    }
-
-    private func exportAnalyticsLog() {
-        do {
-            let url = try AnalyticsEventLogger.shared.exportLogFile()
-            shareItems = [url]
-            showShareSheet = true
-        } catch {
             showExportErrorAlert = true
         }
     }

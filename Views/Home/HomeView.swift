@@ -26,6 +26,8 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 18) {
                 header
 
+                sectionDivider
+
                 statsRow
 
                 sectionDivider
@@ -76,8 +78,8 @@ struct HomeView: View {
 
     private var sectionDivider: some View {
         Divider()
-            .overlay(Color.ink200.opacity(0.7))
-            .padding(.vertical, 2)
+            .overlay(Color.ink200.opacity(0.45))
+            .padding(.vertical, 4)
     }
 
     private var header: some View {
@@ -165,25 +167,15 @@ struct HomeView: View {
             CardContainer(backgroundColor: Color.sage100, cornerRadius: 22, showShadow: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.sage500)
-                                .frame(width: 44, height: 44)
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.sage100.opacity(0.7))
+                            .frame(width: 44, height: 44)
 
-                            Image(systemName: "mic.fill")
-                                .foregroundStyle(.white)
-                        }
-
-                        Spacer()
-
-                        Text("NEW")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Color.surfaceWhite.opacity(0.6))
-                            .clipShape(Capsule())
+                        Image(systemName: "mic.fill")
+                            .foregroundStyle(Color.sage500)
                     }
+                }
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Interview Drill")
@@ -217,7 +209,7 @@ struct HomeView: View {
                 HStack(spacing: 12) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.sage100)
+                            .fill(Color.sage100.opacity(0.7))
                             .frame(width: 44, height: 44)
 
                         Image(systemName: "book.closed.fill")
@@ -250,9 +242,9 @@ struct HomeView: View {
 
     private var recentApplicationsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            SectionHeader(title: "Recent Applications", actionTitle: "") { }
+            SectionHeader(title: "Recent Job Applications", actionTitle: "") { }
 
-            VStack(spacing: 12) {
+            VStack(spacing: 0) {
                 if recentApplications.isEmpty {
                     CardContainer(showShadow: false) {
                         VStack(alignment: .leading, spacing: 8) {
@@ -268,43 +260,49 @@ struct HomeView: View {
                         }
                     }
                 } else {
-                    ForEach(recentApplications) { application in
+                    ForEach(Array(recentApplications.enumerated()), id: \.element.id) { index, application in
                         Button {
                             selectedTab = .jobs
                         } label: {
-                            CardContainer(showShadow: false) {
-                                HStack(spacing: 12) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.sage100)
-                                            .frame(width: 44, height: 44)
-
-                                        Text(application.initials)
-                                            .font(.headline)
-                                            .foregroundStyle(Color.sage500)
-                                    }
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(application.roleTitle)
-                                            .font(.headline)
-                                            .foregroundStyle(Color.ink900)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.85)
-
-                                        Text("\(application.companyName) • \((application.location ?? "Saved"))")
-                                            .font(.subheadline)
-                                            .foregroundStyle(Color.ink600)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.8)
-                                    }
-
-                                    Spacer()
-
-                                    Chip(title: application.stage.rawValue, isSelected: true)
-                                }
-                            }
+                            homeJobCard(application)
                         }
                         .buttonStyle(.plain)
+
+                        if index < recentApplications.count - 1 {
+                            Divider()
+                                .overlay(Color.ink200.opacity(0.35))
+                                .padding(.vertical, 8)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func homeJobCard(_ application: Job) -> some View {
+        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(application.roleTitle)
+                        .font(.headline)
+                        .foregroundStyle(Color.ink900)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+
+                    Text(application.companyName)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.ink600)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                }
+
+                HStack(spacing: 12) {
+                    HomeJobStagePill(stage: application.stage)
+
+                    if let interviewText = interviewDateText(for: application) {
+                        Label("Interview: \(interviewText)", systemImage: "calendar")
+                            .font(.caption)
+                            .foregroundStyle(Color.ink500)
                     }
                 }
             }
@@ -350,7 +348,7 @@ private struct HomeStatCard: View {
             VStack(alignment: .leading, spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.sage100)
+                        .fill(Color.sage100.opacity(0.7))
                         .frame(width: 36, height: 36)
 
                     Image(systemName: icon)
@@ -377,10 +375,33 @@ private struct HomeStatCard: View {
     }
 }
 
-private extension Job {
-    var initials: String {
-        let parts = companyName.split(separator: " ")
-        let letters = parts.prefix(2).compactMap { $0.first }
-        return letters.map { String($0) }.joined().uppercased()
+private struct HomeJobStagePill: View {
+    let stage: JobStage
+
+    var body: some View {
+        Text(stage.rawValue)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(stage.tint.opacity(0.15))
+            .foregroundStyle(stage.tint)
+            .clipShape(Capsule())
     }
+}
+
+private extension JobStage {
+    var tint: Color {
+        switch self {
+        case .saved: return Color.ink500
+        case .applied: return Color.sage500
+        case .interviewing: return Color.sage500
+        case .offer: return Color.sage500
+        case .rejected: return Color.ink500
+        }
+    }
+}
+
+private func interviewDateText(for job: Job) -> String? {
+    guard let date = job.nextInterviewDate else { return nil }
+    return DateFormatters.shortWeekday.string(from: date)
 }

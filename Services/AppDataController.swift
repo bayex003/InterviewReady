@@ -15,7 +15,8 @@ final class AppDataController: ObservableObject {
         Question.self,
         Story.self,
         PracticeAttempt.self,
-        QuestionStoryLink.self
+        QuestionStoryLink.self,
+        JobStoryLink.self
     ])
     private let proKey = "isProUnlocked"
 
@@ -107,7 +108,8 @@ final class AppDataController: ObservableObject {
         let questionCount = try context.fetchCount(FetchDescriptor<Question>())
         let attemptCount = try context.fetchCount(FetchDescriptor<PracticeAttempt>())
         let linkCount = try context.fetchCount(FetchDescriptor<QuestionStoryLink>())
-        return jobCount + storyCount + questionCount + attemptCount + linkCount == 0
+        let jobLinkCount = try context.fetchCount(FetchDescriptor<JobStoryLink>())
+        return jobCount + storyCount + questionCount + attemptCount + linkCount + jobLinkCount == 0
     }
 
     private func migrateLocalDataToCloud(
@@ -119,12 +121,17 @@ final class AppDataController: ObservableObject {
         let localQuestions = try localContext.fetch(FetchDescriptor<Question>())
         let localAttempts = try localContext.fetch(FetchDescriptor<PracticeAttempt>())
         let localLinks = try localContext.fetch(FetchDescriptor<QuestionStoryLink>())
+        let localJobLinks = try localContext.fetch(FetchDescriptor<JobStoryLink>())
 
         for job in localJobs {
             let newJob = Job(companyName: job.companyName, roleTitle: job.roleTitle, stage: job.stage)
+            newJob.id = job.id
             newJob.dateApplied = job.dateApplied
             newJob.nextInterviewDate = job.nextInterviewDate
+            newJob.nextInterviewNotes = job.nextInterviewNotes
             newJob.generalNotes = job.generalNotes
+            newJob.salary = job.salary
+            newJob.location = job.location
             cloudContext.insert(newJob)
         }
 
@@ -176,6 +183,16 @@ final class AppDataController: ObservableObject {
         for link in localLinks {
             let newLink = QuestionStoryLink(
                 questionId: link.questionId,
+                storyId: link.storyId,
+                createdAt: link.createdAt
+            )
+            newLink.id = link.id
+            cloudContext.insert(newLink)
+        }
+
+        for link in localJobLinks {
+            let newLink = JobStoryLink(
+                jobId: link.jobId,
                 storyId: link.storyId,
                 createdAt: link.createdAt
             )

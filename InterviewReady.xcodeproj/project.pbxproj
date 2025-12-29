@@ -62,6 +62,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				AddQuestionView.swift,
+				AttemptsListViewShim.swift,
 				QuestionDetailView.swift,
 				QuestionRow.swift,
 				QuestionsListView.swift,

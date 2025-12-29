@@ -255,24 +255,31 @@ struct QuestionDetailView: View {
         .onChange(of: question.answerText) { _, _ in
             didEditThisSession = true
         }
+        // TO →
         .onDisappear {
-            if !question.answerText.isEmpty, didEditThisSession {
-                question.dateAnswered = Date()
-                question.isAnswered = true
+            // Keep SwiftData mutations on the main actor; avoid transient invalid state during dismiss/navigation.
+            Task { @MainActor in
+                let trimmed = question.answerText.trimmingCharacters(in: .whitespacesAndNewlines)
 
-                enforceAnswerLimitIfNeeded()
+                if !trimmed.isEmpty, didEditThisSession {
+                    question.dateAnswered = Date()
+                    question.isAnswered = true
 
-                let attempt = PracticeAttempt(
-                    source: "manual",
-                    questionTextSnapshot: question.text,
-                    questionId: question.id,
-                    notes: question.answerText,
-                    audioPath: nil
-                )
-                modelContext.insert(attempt)
-                try? modelContext.save()
-            } else if question.answerText.isEmpty {
-                question.isAnswered = false
+                    enforceAnswerLimitIfNeeded()
+
+                    let attempt = PracticeAttempt(
+                        source: "manual",
+                        questionTextSnapshot: question.text,
+                        questionId: question.id,
+                        notes: trimmed,
+                        audioPath: nil
+                    )
+                    modelContext.insert(attempt)
+                    try? modelContext.save()
+                } else if trimmed.isEmpty {
+                    question.isAnswered = false
+                    try? modelContext.save()
+                }
             }
         }
         .alert("Delete this question?", isPresented: $showDeleteConfirmation) {

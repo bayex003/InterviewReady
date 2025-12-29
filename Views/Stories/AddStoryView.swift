@@ -283,6 +283,7 @@ struct NewStoryView: View {
             TextField("e.g. Project Phoenix Launch", text: $title)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.ink900)
+                .padding(.horizontal, 12)
                 .padding(.vertical, 8)
 
             if !canSave && !isProcessingScan {
@@ -655,17 +656,55 @@ private struct StarFieldEditor: View {
     let symbol: String
     let placeholder: String
     @Binding var text: String
+    private var badgeStyle: BadgeStyle {
+        switch symbol {
+        case "S":
+            return BadgeStyle(
+                background: Color.sage100,
+                foreground: Color.sage500,
+                border: Color.sage500.opacity(0.3)
+            )
+        case "T":
+            return BadgeStyle(
+                background: Color.ink100.opacity(0.7),
+                foreground: Color.ink700,
+                border: Color.ink200
+            )
+        case "A":
+            return BadgeStyle(
+                background: Color.cream50,
+                foreground: Color.ink600,
+                border: Color.ink200
+            )
+        case "R":
+            return BadgeStyle(
+                background: Color.sage100.opacity(0.55),
+                foreground: Color.sage500,
+                border: Color.sage500.opacity(0.2)
+            )
+        default:
+            return BadgeStyle(
+                background: Color.ink100,
+                foreground: Color.ink700,
+                border: Color.ink200
+            )
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
                 Circle()
-                    .fill(Color.sage500)
+                    .fill(badgeStyle.background)
                     .frame(width: 24, height: 24)
+                    .overlay(
+                        Circle()
+                            .stroke(badgeStyle.border, lineWidth: 1)
+                    )
                     .overlay(
                         Text(symbol)
                             .font(.caption.bold())
-                            .foregroundStyle(.white)
+                            .foregroundStyle(badgeStyle.foreground)
                     )
 
                 Text(label)
@@ -693,6 +732,12 @@ private struct StarFieldEditor: View {
             }
         }
     }
+}
+
+private struct BadgeStyle {
+    let background: Color
+    let foreground: Color
+    let border: Color
 }
 private struct StorySectionHeader: View {
     let title: String

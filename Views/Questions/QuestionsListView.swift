@@ -29,7 +29,8 @@ struct QuestionsListView: View {
         return questions.filter { q in
             guard selectedFilter.matches(q) else { return false }
             if trimmed.isEmpty { return true }
-            return "\(q.text) \(q.category)".localizedCaseInsensitiveContains(trimmed)
+            let tags = q.tags.joined(separator: " ")
+            return "\(q.text) \(q.category) \(tags)".localizedCaseInsensitiveContains(trimmed)
         }
     }
 

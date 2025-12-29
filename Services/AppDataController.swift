@@ -143,6 +143,8 @@ final class AppDataController: ObservableObject {
             let newQuestion = Question(
                 text: question.text,
                 category: question.category,
+                tags: question.tags,
+                draftNotes: question.draftNotes,
                 tip: question.tip,
                 exampleAnswer: question.exampleAnswer
             )

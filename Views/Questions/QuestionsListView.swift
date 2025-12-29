@@ -3,6 +3,7 @@ import SwiftData
 
 struct QuestionsListView: View {
     @EnvironmentObject private var attemptsStore: AttemptsStore
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Question.updatedAt, order: .reverse) private var questions: [Question]
 
     @State private var searchText: String = ""
@@ -33,7 +34,7 @@ struct QuestionsListView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack(alignment: .bottomTrailing) {
             Color.cream50.ignoresSafeArea()
 
             ScrollView(showsIndicators: false) {
@@ -55,7 +56,14 @@ struct QuestionsListView: View {
 
             if isSelecting {
                 startSessionBar
+                    .frame(maxWidth: .infinity)
             }
+
+            FloatingAddButton {
+                showAddQuestion = true
+            }
+            .floatingAddButtonPosition()
+            .padding(.bottom, isSelecting ? 88 : 0)
         }
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showSession) {
@@ -175,7 +183,7 @@ struct QuestionsListView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(CategoryFilter.allCases) { filter in
-                    Chip(title: filter.title, isSelected: filter == selectedFilter) {
+                    TagChip(title: filter.title, isSelected: filter == selectedFilter) {
                         selectedFilter = filter
                     }
                 }
@@ -221,6 +229,15 @@ struct QuestionsListView: View {
                         ) {
                             toggleSelection(for: q)
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            if q.isCustom && !isSelecting {
+                                Button(role: .destructive) {
+                                    delete(question: q)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
                     } else {
                         NavigationLink {
                             QuestionDetailView(question: q)
@@ -233,6 +250,15 @@ struct QuestionsListView: View {
                             )
                         }
                         .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            if q.isCustom {
+                                Button(role: .destructive) {
+                                    delete(question: q)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -246,6 +272,11 @@ struct QuestionsListView: View {
         } else {
             selectedQuestionIDs.insert(q.id)
         }
+    }
+
+    private func delete(question: Question) {
+        modelContext.delete(question)
+        try? modelContext.save()
     }
 
     // MARK: - Bottom Start Bar
@@ -311,6 +342,8 @@ struct QuestionsListView: View {
         let isSelected: Bool
         let onTap: () -> Void
 
+        private let selectionIndicatorWidth: CGFloat = 32
+
         var body: some View {
             CardContainer(showShadow: false) {
                 HStack(alignment: .top, spacing: 12) {
@@ -330,7 +363,7 @@ struct QuestionsListView: View {
                             .lineLimit(2)
 
                         HStack(spacing: 8) {
-                            Chip(title: question.category, isSelected: true)
+                            TagChip(title: question.category, isSelected: true)
                             Text("Unanswered")
                                 .font(.caption)
                                 .foregroundStyle(Color.ink500)
@@ -339,17 +372,59 @@ struct QuestionsListView: View {
 
                     Spacer()
 
-                    if isSelecting {
-                        Image(systemName: isSelected ? "checkmark.square.fill" : "square")
-                            .foregroundStyle(isSelected ? Color.sage500 : Color.ink300)
-                            .font(.system(size: 18, weight: .semibold))
-                            .padding(.top, 6)
-                    }
+                    Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                        .foregroundStyle(isSelected ? Color.sage500 : Color.ink300)
+                        .font(.system(size: 18, weight: .semibold))
+                        .padding(.top, 6)
+                        .opacity(isSelecting ? 1 : 0)
+                        .accessibilityHidden(!isSelecting)
+                        .frame(width: selectionIndicatorWidth, alignment: .trailing)
                 }
             }
             .onTapGesture {
                 if isSelecting { onTap() }
             }
+        }
+    }
+
+    private struct TagChip: View {
+        let title: String
+        var isSelected: Bool = false
+        var action: (() -> Void)? = nil
+
+        private var foregroundColor: Color {
+            TagColorResolver.color(forTag: title)
+        }
+
+        private var backgroundColor: Color {
+            TagColorResolver.background(forTag: title)
+        }
+
+        var body: some View {
+            Group {
+                if let action {
+                    Button(action: action) { chipBody }
+                        .buttonStyle(.plain)
+                } else {
+                    chipBody
+                }
+            }
+        }
+
+        private var chipBody: some View {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .foregroundStyle(isSelected ? foregroundColor : foregroundColor.opacity(0.75))
+                .background(
+                    Capsule()
+                        .fill(isSelected ? backgroundColor : backgroundColor.opacity(0.5))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(foregroundColor.opacity(isSelected ? 0.3 : 0.2), lineWidth: 1)
+                )
         }
     }
 }

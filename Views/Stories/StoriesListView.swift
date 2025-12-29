@@ -13,6 +13,7 @@ struct StoryBankView: View {
     @State private var selectedFilter: StoryFilter = .all
     @State private var showAddStory = false
     @State private var showPaywall = false
+    @State private var pendingSuggestion: String? = nil
 
     // MARK: - V2 Free Limit (Stories)
     private let freeStoryLimit = 10
@@ -67,11 +68,13 @@ struct StoryBankView: View {
                     filterRow
 
                     if stories.isEmpty {
-                        emptyStateCard
+                        inspirationCard
                     } else if filteredStories.isEmpty {
                         noResultsCard
+                        inspirationCard
                     } else {
                         storiesSection
+                        inspirationCard
                     }
                 }
                 .padding(.horizontal, 20)
@@ -85,8 +88,10 @@ struct StoryBankView: View {
             .floatingAddButtonPosition()
         }
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showAddStory) {
-            NewStoryView()
+        .sheet(isPresented: $showAddStory, onDismiss: {
+            pendingSuggestion = nil
+        }) {
+            NewStoryView(suggestedTitle: pendingSuggestion)
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView()
@@ -184,14 +189,49 @@ struct StoryBankView: View {
 
     // MARK: - Empty / No results (matches redesign vibe)
 
-    private var emptyStateCard: some View {
-        EmptyStateCard(
-            systemImage: "lightbulb.fill",
-            title: "Need inspiration?",
-            subtitle: "Try adding a story about a time you handled a tight deadline.",
-            ctaTitle: "Write your first story"
-        ) {
-            handleAddTapped()
+    private var inspirationCard: some View {
+        CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 24, showShadow: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.sage100)
+                            .frame(width: 36, height: 36)
+
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.sage500)
+                    }
+
+                    Text("Need inspiration?")
+                        .font(.headline)
+                        .foregroundStyle(Color.ink900)
+
+                    Spacer()
+                }
+
+                Text(currentInspirationSuggestion)
+                    .font(.subheadline)
+                    .foregroundStyle(Color.ink500)
+
+                Button {
+                    handleAddTapped(suggestedTitle: currentInspirationSuggestion)
+                } label: {
+                    Text("Add this story")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color.sage500)
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 12)
+                        .background(
+                            Capsule()
+                                .fill(Color.sage100.opacity(0.7))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .onTapGesture {
+            handleAddTapped(suggestedTitle: currentInspirationSuggestion)
         }
     }
 
@@ -211,10 +251,24 @@ struct StoryBankView: View {
 
     // MARK: - Add gating
 
-    private func handleAddTapped() {
+    private var inspirationSuggestions: [String] {
+        [
+            "Share a moment when you handled a tight deadline.",
+            "Describe a time you influenced a team decision.",
+            "Tell a story about improving a process or workflow."
+        ]
+    }
+
+    private var currentInspirationSuggestion: String {
+        let day = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 0
+        return inspirationSuggestions[day % inspirationSuggestions.count]
+    }
+
+    private func handleAddTapped(suggestedTitle: String? = nil) {
         if hasReachedFreeLimit {
             showPaywall = true
         } else {
+            pendingSuggestion = suggestedTitle
             showAddStory = true
         }
     }
@@ -266,34 +320,39 @@ private struct StoryCardView: View {
 
     private var cardDescription: String {
         let fields = [story.situation, story.task, story.action, story.result]
-        let filled = fields.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        if filled.isEmpty {
+        let filled = fields
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        guard !filled.isEmpty else {
             return "Add STAR details to make this story stronger."
         }
-        return filled.joined(separator: " • ")
+
+        return filled.prefix(2).joined(separator: " • ")
     }
 
     var body: some View {
         CardContainer(backgroundColor: Color.surfaceWhite, cornerRadius: 22, showShadow: false) {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(story.title)
-                            .font(.headline)
-                            .foregroundStyle(Color.ink900)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.9)
-
-                        Text(formattedDate)
-                            .font(.caption)
-                            .foregroundStyle(Color.ink400)
+                HStack(alignment: .center, spacing: 8) {
+                    HStack(spacing: 6) {
+                        ForEach(displayTags, id: \.self) { tag in
+                            StoryTagPill(title: tag)
+                        }
                     }
 
                     Spacer()
 
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(Color.ink300)
+                    Text(formattedDate)
+                        .font(.caption)
+                        .foregroundStyle(Color.ink400)
                 }
+
+                Text(story.title)
+                    .font(.headline)
+                    .foregroundStyle(Color.ink900)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.9)
 
                 Text(cardDescription)
                     .font(.subheadline)
@@ -301,11 +360,113 @@ private struct StoryCardView: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.9)
 
-                HStack(spacing: 8) {
-                    ForEach(displayTags, id: \.self) { tag in
-                        Chip(title: tag, isSelected: true)
-                    }
+                HStack {
+                    Text(statusText)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(statusColor)
+
+                    Spacer()
+
+                    StarProgressView(segments: starSegments)
                 }
+            }
+        }
+    }
+
+    private var starSegments: [StarSegment] {
+        [
+            StarSegment(title: "S", isComplete: hasSituation),
+            StarSegment(title: "T", isComplete: hasTask),
+            StarSegment(title: "A", isComplete: hasAction),
+            StarSegment(title: "R", isComplete: hasResult)
+        ]
+    }
+
+    private var statusText: String {
+        if hasSituation && hasTask && hasAction && hasResult {
+            return "STAR READY"
+        }
+
+        if hasSituation && hasTask && hasAction && !hasResult {
+            return "ADD RESULT"
+        }
+
+        return "IN PROGRESS"
+    }
+
+    private var statusColor: Color {
+        if hasSituation && hasTask && hasAction && hasResult {
+            return Color.sage500
+        }
+
+        return Color.ink500
+    }
+
+    private var hasSituation: Bool {
+        !story.situation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var hasTask: Bool {
+        !story.task.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var hasAction: Bool {
+        !story.action.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var hasResult: Bool {
+        !story.result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
+private struct StoryTagPill: View {
+    let title: String
+
+    private var foregroundColor: Color {
+        TagColorResolver.color(forTag: title)
+    }
+
+    private var backgroundColor: Color {
+        TagColorResolver.background(forTag: title)
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .foregroundStyle(foregroundColor)
+            .background(
+                Capsule()
+                    .fill(backgroundColor)
+            )
+            .overlay(
+                Capsule()
+                    .stroke(foregroundColor.opacity(0.25), lineWidth: 1)
+            )
+    }
+}
+
+private struct StarSegment: Identifiable {
+    let id = UUID()
+    let title: String
+    let isComplete: Bool
+}
+
+private struct StarProgressView: View {
+    let segments: [StarSegment]
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(segments) { segment in
+                Text(segment.title)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(segment.isComplete ? Color.sage500 : Color.ink400)
+                    .frame(width: 20, height: 20)
+                    .background(
+                        Capsule()
+                            .fill(segment.isComplete ? Color.sage100 : Color.ink200.opacity(0.5))
+                    )
             }
         }
     }

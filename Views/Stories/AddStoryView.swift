@@ -44,9 +44,11 @@ struct NewStoryView: View {
         ProGatekeeper(isPro: { purchaseManager.isPro }, presentPaywall: { activeSheet = .paywall })
     }
 
-    init(story: Story? = nil) {
+    init(story: Story? = nil, suggestedTitle: String? = nil) {
         self.story = story
-        _title = State(initialValue: story?.title ?? "")
+        let baseTitle = story?.title ?? ""
+        let resolvedTitle = baseTitle.isEmpty ? (suggestedTitle ?? "") : baseTitle
+        _title = State(initialValue: resolvedTitle)
         let initialTags = NewStoryView.initialTagSelection(for: story)
         _selectedTags = State(initialValue: Set(initialTags))
         _situation = State(initialValue: story?.situation ?? "")
